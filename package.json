@@ -1,0 +1,14 @@
+{
+  "name": "density",
+  "version": "1.0.0",
+  "description": "DENSITY — strength + pump training tracker with 12-week 10K run plan",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node serve.mjs",
+    "shot": "node screenshot.mjs"
+  },
+  "devDependencies": {
+    "puppeteer": "^24.42.0"
+  }
+}

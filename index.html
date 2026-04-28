@@ -1,0 +1,2731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0">
+<meta name="theme-color" content="#16140F">
+<title>DENSITY · Training Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #16140F;
+    --card: #221E18;
+    --card2: #1B1815;
+    --accent: #C8F135;
+    --green: #A8C42A;
+    --red: #F0524A;
+    --blue: #7BB8FF;
+    --yellow: #F5CC74;
+    --text: #F4F1E8;
+    --muted: #A8A294;
+    --dark: #34302A;
+    --darker: #16161420;
+    --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --ease: cubic-bezier(0.16, 1, 0.3, 1);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-top: env(safe-area-inset-top, 0px);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body, #root { height: 100%; }
+  html { background: var(--bg); }
+  body {
+    font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+    overflow-x: hidden;
+    overscroll-behavior-y: none;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* layered radial backdrop */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(ellipse 800px 600px at 20% -10%, rgba(200,241,53,0.06), transparent 60%),
+      radial-gradient(ellipse 600px 400px at 90% 100%, rgba(230,59,46,0.04), transparent 60%);
+    pointer-events: none; z-index: 0;
+  }
+  body::after {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.08 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+    pointer-events: none; z-index: 0; opacity: 0.6;
+    mix-blend-mode: overlay;
+  }
+  #root { position: relative; z-index: 1; min-height: 100%; }
+
+  button, input, select { font-family: inherit; color: inherit; }
+  button { background: none; border: none; cursor: pointer; }
+  input { background: transparent; border: none; outline: none; }
+  input[type=number]::-webkit-inner-spin-button { display: none; }
+  input[type=number] { -moz-appearance: textfield; }
+
+  .display { font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.02em; line-height: 0.95; }
+  .mono { font-family: 'DM Mono', ui-monospace, monospace; }
+
+  .app {
+    min-height: 100vh; min-height: 100dvh;
+    display: flex; flex-direction: column;
+    padding-top: calc(var(--safe-top) + 0px);
+  }
+  .app-header {
+    position: sticky; top: 0; z-index: 50;
+    padding: calc(var(--safe-top) + 12px) 18px 12px 18px;
+    background: linear-gradient(180deg, rgba(10,10,8,0.95) 0%, rgba(10,10,8,0.85) 70%, rgba(10,10,8,0));
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .brand {
+    display: flex; align-items: baseline; gap: 8px;
+  }
+  .brand-logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px; letter-spacing: 0.06em;
+    color: var(--text);
+  }
+  .brand-tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px; letter-spacing: 0.18em; color: var(--accent);
+    text-transform: uppercase;
+  }
+  .week-pill {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px; letter-spacing: 0.14em;
+    padding: 6px 10px; border-radius: 999px;
+    background: var(--card); border: 1px solid var(--dark);
+    color: var(--text);
+  }
+  .week-pill.deload { color: var(--blue); border-color: rgba(96,165,250,0.3); background: rgba(96,165,250,0.08); }
+
+  main { flex: 1; padding: 0 16px 100px 16px; max-width: 720px; margin: 0 auto; width: 100%; }
+
+  /* tab bar */
+  .tab-bar {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
+    padding: 8px 12px calc(var(--safe-bottom) + 8px) 12px;
+    background: linear-gradient(0deg, rgba(10,10,8,0.96) 0%, rgba(10,10,8,0.85) 70%, rgba(10,10,8,0) 100%);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    display: flex; gap: 6px; justify-content: center;
+  }
+  .tab {
+    flex: 1; max-width: 140px;
+    display: flex; flex-direction: column; align-items: center;
+    gap: 3px; padding: 8px 12px; border-radius: 14px;
+    color: var(--muted);
+    transition: color 0.25s var(--ease), transform 0.4s var(--spring);
+  }
+  .tab.active { color: var(--accent); }
+  .tab:active { transform: scale(0.94); }
+  .tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .tab-icon { width: 22px; height: 22px; }
+  .tab-label { font-size: 11px; letter-spacing: 0.12em; font-family: 'DM Mono', monospace; text-transform: uppercase; }
+
+  /* card system */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--dark);
+    border-radius: 18px;
+    padding: 16px;
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.02) inset,
+      0 1px 2px rgba(0,0,0,0.4),
+      0 8px 24px -12px rgba(0,0,0,0.6);
+  }
+  .card.elevated {
+    background: var(--card);
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.03) inset,
+      0 2px 4px rgba(0,0,0,0.4),
+      0 16px 40px -16px rgba(200,241,53,0.08),
+      0 8px 24px -8px rgba(0,0,0,0.6);
+  }
+  .card.floating {
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.04) inset,
+      0 4px 8px rgba(0,0,0,0.5),
+      0 24px 60px -20px rgba(200,241,53,0.12),
+      0 8px 24px -8px rgba(0,0,0,0.7);
+  }
+
+  /* cycle indicator */
+  .cycle-indicator { padding: 18px 16px; }
+  .cycle-meta {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 14px;
+  }
+  .cycle-num {
+    font-family: 'DM Mono', monospace; font-size: 11px;
+    letter-spacing: 0.18em; color: var(--muted); text-transform: uppercase;
+  }
+  .cycle-week {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 36px; line-height: 1; letter-spacing: -0.01em;
+  }
+  .cycle-strip {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px;
+  }
+  .cycle-strip-cell {
+    height: 42px; border-radius: 10px;
+    background: var(--card2); border: 1px solid var(--dark);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.1em;
+    color: var(--muted);
+    transition: transform 0.4s var(--spring);
+  }
+  .cycle-strip-cell.current {
+    background: rgba(200,241,53,0.08);
+    border-color: rgba(200,241,53,0.4);
+    color: var(--accent);
+  }
+  .cycle-strip-cell.deload.current {
+    background: rgba(96,165,250,0.08);
+    border-color: rgba(96,165,250,0.4);
+    color: var(--blue);
+  }
+  .cycle-strip-cell.done {
+    background: rgba(138,170,31,0.06); border-color: rgba(138,170,31,0.2); color: var(--green);
+  }
+  .cycle-strip-name { font-size: 12px; font-weight: 600; line-height: 1; }
+  .cycle-strip-reps { font-size: 9px; opacity: 0.75; margin-top: 3px; }
+
+  /* day grid */
+  .section-label {
+    font-family: 'DM Mono', monospace; font-size: 11px;
+    letter-spacing: 0.2em; color: var(--muted);
+    text-transform: uppercase; margin: 24px 0 10px 4px;
+  }
+  .day-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
+  }
+  .day-grid > :first-child { grid-column: 1 / -1; }
+  .day-card {
+    position: relative;
+    padding: 16px;
+    border-radius: 16px;
+    background: var(--card);
+    border: 1px solid var(--dark);
+    text-align: left;
+    color: var(--text);
+    transition: transform 0.4s var(--spring), border-color 0.25s var(--ease);
+    box-shadow: 0 1px 0 rgba(255,255,255,0.02) inset, 0 8px 20px -12px rgba(0,0,0,0.5);
+  }
+  .day-card:hover { border-color: rgba(200,241,53,0.3); }
+  .day-card:active { transform: scale(0.97); }
+  .day-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .day-card.complete { border-color: rgba(138,170,31,0.35); background: rgba(138,170,31,0.05); }
+  .day-card.today { border-color: rgba(200,241,53,0.5); }
+  .day-card.today::before {
+    content: ''; position: absolute; inset: -1px; border-radius: 16px; pointer-events: none;
+    background: linear-gradient(135deg, rgba(200,241,53,0.15), transparent 50%);
+  }
+  .day-card-num {
+    font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.16em;
+    color: var(--muted); text-transform: uppercase;
+  }
+  .day-card-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px; letter-spacing: 0.01em; line-height: 1.05;
+    margin-top: 6px;
+  }
+  .day-card-focus {
+    font-size: 12px; color: var(--muted);
+    margin-top: 6px; line-height: 1.45;
+  }
+  .day-card-status {
+    position: absolute; top: 12px; right: 12px;
+    width: 22px; height: 22px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; color: var(--green);
+  }
+
+  /* recent sessions */
+  .recent-list { display: flex; flex-direction: column; gap: 8px; }
+  .recent-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 14px; border-radius: 12px;
+    background: var(--card2); border: 1px solid var(--dark);
+  }
+  .recent-day { font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 0.02em; }
+  .recent-meta { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); letter-spacing: 0.06em; }
+  .recent-volume { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text); }
+
+  /* session view */
+  .session-header {
+    padding: 18px 16px 14px 16px;
+    margin-bottom: 14px;
+  }
+  .session-back {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-family: 'DM Mono', monospace; font-size: 10px;
+    letter-spacing: 0.16em; color: var(--muted); text-transform: uppercase;
+    padding: 4px 0; margin-bottom: 10px;
+    transition: color 0.25s var(--ease), transform 0.4s var(--spring);
+  }
+  .session-back:hover { color: var(--text); }
+  .session-back:active { transform: translateX(-2px); }
+  .session-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 36px; line-height: 0.95; letter-spacing: -0.02em;
+  }
+  .session-focus { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .session-clock {
+    font-family: 'DM Mono', monospace; font-size: 13px; color: var(--muted);
+    margin-top: 10px;
+  }
+  .session-clock.warn { color: var(--yellow); }
+  .session-clock.crit { color: var(--red); }
+
+  /* exercise block */
+  .exercise { margin-bottom: 14px; padding: 16px; }
+  .ex-head {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    gap: 10px; margin-bottom: 6px;
+  }
+  .ex-name { font-family: 'Bebas Neue', sans-serif; font-size: 24px; letter-spacing: 0.005em; line-height: 1.05; }
+  .ex-badge {
+    font-family: 'DM Mono', monospace; font-size: 10px;
+    letter-spacing: 0.16em; padding: 3px 7px; border-radius: 4px;
+    text-transform: uppercase;
+  }
+  .ex-badge.main { background: rgba(230,59,46,0.12); color: var(--red); border: 1px solid rgba(230,59,46,0.3); }
+  .ex-badge.cluster { background: rgba(240,192,96,0.1); color: var(--yellow); border: 1px solid rgba(240,192,96,0.3); }
+  .ex-badge.acc { background: rgba(232,230,224,0.05); color: var(--muted); border: 1px solid var(--dark); }
+  .ex-badge.swap { background: rgba(240,192,96,0.1); color: var(--yellow); border: 1px solid rgba(240,192,96,0.3); }
+  .ex-badge.custom { background: rgba(184,127,255,0.12); color: #B87FFF; border: 1px solid rgba(184,127,255,0.3); }
+  .ex-target { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--muted); margin-bottom: 10px; line-height: 1.55; }
+  .ex-timer {
+    flex-shrink: 0;
+    font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 500;
+    padding: 5px 10px; border-radius: 999px;
+    color: var(--accent);
+    background: rgba(200,241,53,0.08);
+    border: 1px solid rgba(200,241,53,0.3);
+  }
+  .ex-timer.locked {
+    color: var(--green);
+    background: rgba(138,170,31,0.08);
+    border-color: rgba(138,170,31,0.3);
+  }
+  .ex-target b { color: var(--text); font-weight: 500; }
+  .ex-note {
+    font-size: 12px; color: var(--text); line-height: 1.55;
+    padding: 10px 12px; background: var(--card2); border-radius: 8px;
+    border-left: 2px solid rgba(200,241,53,0.4);
+    margin-bottom: 12px;
+  }
+
+  /* set rows */
+  .set-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+  .set-row {
+    display: grid;
+    grid-template-columns: 24px 1fr 1fr 1fr 36px;
+    gap: 6px; align-items: center;
+    padding: 6px;
+    border-radius: 10px;
+    background: var(--card2);
+    border: 1px solid transparent;
+    transition: border-color 0.25s var(--ease), transform 0.4s var(--spring);
+  }
+  .set-row.done { background: rgba(138,170,31,0.06); border-color: rgba(138,170,31,0.25); }
+  .set-row.active { border-color: rgba(200,241,53,0.4); }
+  .set-num {
+    font-family: 'DM Mono', monospace; font-size: 11px;
+    color: var(--muted); text-align: center;
+  }
+  .set-row.done .set-num { color: var(--green); }
+  .set-input {
+    height: 38px; padding: 0 8px; border-radius: 8px;
+    background: var(--bg); border: 1px solid var(--dark);
+    font-family: 'DM Mono', monospace; font-size: 14px; font-weight: 500;
+    text-align: center; width: 100%;
+    transition: border-color 0.2s var(--ease);
+  }
+  .set-input:focus { border-color: var(--accent); }
+  .set-input::placeholder { color: var(--muted); opacity: 0.5; }
+  .rpe-display {
+    height: 38px; padding: 0 8px; border-radius: 8px;
+    background: var(--bg); border: 1px solid var(--dark);
+    font-family: 'DM Mono', monospace; font-size: 13px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text); transition: border-color 0.2s var(--ease);
+  }
+  .rpe-display.empty { color: var(--muted); }
+  .rpe-display:hover { border-color: rgba(200,241,53,0.3); }
+  .set-check {
+    width: 36px; height: 38px; border-radius: 8px;
+    background: var(--bg); border: 1px solid var(--dark);
+    display: flex; align-items: center; justify-content: center;
+    transition: transform 0.4s var(--spring), background 0.2s var(--ease), border-color 0.2s var(--ease);
+  }
+  .set-check:hover { border-color: rgba(200,241,53,0.5); }
+  .set-check:active { transform: scale(0.9); }
+  .set-row.done .set-check { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+  .set-check svg { width: 14px; height: 14px; }
+
+  .set-add, .set-remove {
+    flex: 1; padding: 8px; border-radius: 8px;
+    font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.12em;
+    color: var(--muted); text-transform: uppercase;
+    background: transparent; border: 1px dashed var(--dark);
+    transition: color 0.25s var(--ease), border-color 0.25s var(--ease), transform 0.4s var(--spring);
+  }
+  .set-add:hover, .set-remove:hover { color: var(--text); border-color: var(--muted); }
+  .set-add:active, .set-remove:active { transform: scale(0.97); }
+  .set-controls { display: flex; gap: 6px; }
+
+  .ex-foot {
+    display: flex; gap: 8px; margin-top: 12px;
+    padding-top: 10px; border-top: 1px solid var(--dark);
+  }
+  .ex-foot-btn {
+    font-family: 'DM Mono', monospace; font-size: 10px;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    padding: 8px 12px; border-radius: 10px;
+    color: var(--muted); background: transparent;
+    border: 1px solid var(--dark);
+    transition: color 0.25s var(--ease), border-color 0.25s var(--ease), transform 0.4s var(--spring);
+  }
+  .ex-foot-btn:hover { color: var(--text); border-color: var(--muted); }
+  .ex-foot-btn:active { transform: scale(0.97); }
+
+  /* RPE picker */
+  .rpe-pick {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px;
+    padding: 10px;
+  }
+  .rpe-btn {
+    height: 44px; border-radius: 10px;
+    background: var(--card2); border: 1px solid var(--dark);
+    font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 500;
+    color: var(--text);
+    transition: transform 0.4s var(--spring), background 0.2s var(--ease), border-color 0.2s var(--ease);
+  }
+  .rpe-btn:hover { border-color: var(--muted); }
+  .rpe-btn:active { transform: scale(0.93); }
+  .rpe-btn.selected {
+    background: var(--accent); color: var(--bg);
+    border-color: var(--accent);
+    box-shadow: 0 0 16px -4px rgba(200,241,53,0.5);
+  }
+
+  /* rest timer */
+  .rest-overlay {
+    position: fixed; inset: 0; z-index: 60;
+    background: rgba(10,10,8,0.85);
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px;
+    animation: fadeIn 0.25s var(--ease);
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .rest-circle-wrap {
+    position: relative; width: 240px; height: 240px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .rest-svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+  .rest-track { fill: none; stroke: var(--dark); stroke-width: 4; }
+  .rest-progress {
+    fill: none; stroke: var(--accent); stroke-width: 4;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.3s linear;
+  }
+  .rest-progress.done { stroke: var(--green); }
+  .rest-time {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  .rest-time-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 72px; line-height: 1; letter-spacing: -0.02em;
+    color: var(--text);
+  }
+  .rest-time-label {
+    font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.18em;
+    color: var(--muted); text-transform: uppercase; margin-top: 4px;
+  }
+  .rest-actions {
+    position: absolute; bottom: calc(var(--safe-bottom) + 32px);
+    left: 0; right: 0; display: flex; justify-content: center; gap: 10px;
+  }
+  .rest-action {
+    font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding: 12px 20px; border-radius: 999px;
+    background: var(--card); border: 1px solid var(--dark);
+    color: var(--text);
+    transition: transform 0.4s var(--spring), background 0.2s var(--ease);
+  }
+  .rest-action:active { transform: scale(0.95); }
+  .rest-action.primary { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+
+  /* plateau banner */
+  .plateau {
+    margin: 0 0 10px 0;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid;
+    transition: max-height 0.4s var(--ease);
+  }
+  .plateau.stall { background: rgba(240,192,96,0.06); border-color: rgba(240,192,96,0.3); }
+  .plateau.decline { background: rgba(230,59,46,0.06); border-color: rgba(230,59,46,0.3); }
+  .plateau-head {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 12px; cursor: pointer;
+    transition: background 0.2s var(--ease);
+  }
+  .plateau-tag {
+    font-family: 'DM Mono', monospace; font-size: 10px;
+    letter-spacing: 0.16em; text-transform: uppercase;
+  }
+  .plateau.stall .plateau-tag { color: var(--yellow); }
+  .plateau.decline .plateau-tag { color: var(--red); }
+  .plateau-arrow { font-size: 14px; color: var(--muted); transition: transform 0.3s var(--spring); }
+  .plateau.open .plateau-arrow { transform: rotate(180deg); }
+  .plateau-body { padding: 0 12px 12px 12px; }
+  .plateau-body ul { list-style: none; }
+  .plateau-body li {
+    font-size: 12px; color: var(--text); line-height: 1.5;
+    padding: 6px 0; padding-left: 16px;
+    position: relative;
+  }
+  .plateau-body li::before {
+    content: '→'; position: absolute; left: 0;
+    color: var(--muted); font-family: 'DM Mono', monospace;
+  }
+
+  /* swap modal */
+  .modal-bg {
+    position: fixed; inset: 0; z-index: 70;
+    background: rgba(10,10,8,0.7);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    display: flex; align-items: flex-end; justify-content: center;
+    animation: fadeIn 0.25s var(--ease);
+  }
+  .modal {
+    background: var(--card);
+    border-top-left-radius: 24px; border-top-right-radius: 24px;
+    padding: 18px 18px calc(var(--safe-bottom) + 18px) 18px;
+    width: 100%; max-width: 520px;
+    max-height: 85vh; overflow-y: auto;
+    box-shadow: 0 -24px 60px -8px rgba(0,0,0,0.6);
+    animation: slideUp 0.35s var(--spring);
+  }
+  @keyframes slideUp { from { transform: translateY(40px); } to { transform: translateY(0); } }
+  .modal-handle {
+    width: 36px; height: 4px; border-radius: 2px; background: var(--dark);
+    margin: 0 auto 14px auto;
+  }
+  .modal-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 24px; letter-spacing: 0.005em;
+    margin-bottom: 4px;
+  }
+  .modal-sub { font-size: 11px; color: var(--muted); margin-bottom: 14px; }
+  .swap-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+  .swap-opt {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 14px; border-radius: 12px;
+    background: var(--card2); border: 1px solid var(--dark);
+    text-align: left; width: 100%; color: var(--text);
+    transition: border-color 0.2s var(--ease), transform 0.4s var(--spring);
+  }
+  .swap-opt:hover { border-color: var(--muted); }
+  .swap-opt:active { transform: scale(0.98); }
+  .swap-opt.current { border-color: rgba(200,241,53,0.4); background: rgba(200,241,53,0.05); }
+  .swap-opt-name { font-size: 14px; font-weight: 500; }
+  .swap-opt-current {
+    font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 0.16em;
+    color: var(--accent); text-transform: uppercase;
+  }
+  .custom-input-row {
+    display: flex; flex-direction: column; gap: 8px; margin-top: 8px;
+  }
+  .custom-input {
+    padding: 12px 14px; border-radius: 12px;
+    background: var(--card2); border: 1px solid var(--dark);
+    font-size: 14px;
+    transition: border-color 0.2s var(--ease);
+  }
+  .custom-input:focus { border-color: var(--accent); }
+  .modal-actions { display: flex; gap: 8px; margin-top: 14px; }
+  .btn {
+    flex: 1; padding: 14px; border-radius: 14px;
+    font-family: 'DM Mono', monospace; font-size: 11px;
+    letter-spacing: 0.16em; text-transform: uppercase; font-weight: 500;
+    transition: transform 0.4s var(--spring), background 0.2s var(--ease), border-color 0.2s var(--ease);
+  }
+  .btn-primary { background: var(--accent); color: var(--bg); border: 1px solid var(--accent); }
+  .btn-primary:hover { background: #d6f74e; }
+  .btn-primary:active { transform: scale(0.97); }
+  .btn-ghost { background: transparent; color: var(--text); border: 1px solid var(--dark); }
+  .btn-ghost:hover { border-color: var(--muted); }
+  .btn-ghost:active { transform: scale(0.97); }
+  .btn-danger { background: transparent; color: var(--red); border: 1px solid rgba(230,59,46,0.3); }
+  .btn-danger:hover { background: rgba(230,59,46,0.08); }
+
+  /* sticky save */
+  .save-bar {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 40;
+    padding: 12px 16px calc(var(--safe-bottom) + 12px) 16px;
+    background: linear-gradient(0deg, var(--bg) 30%, rgba(10,10,8,0));
+    display: flex; gap: 8px; max-width: 720px; margin: 0 auto;
+  }
+
+  /* bodyweight view */
+  .bw-input-card { padding: 18px; }
+  .bw-input-row {
+    display: flex; gap: 10px; margin-top: 10px; align-items: stretch;
+  }
+  .bw-input-big {
+    flex: 1; min-width: 0;
+    height: 56px; padding: 0 16px;
+    background: var(--card2); border: 1px solid var(--dark); border-radius: 14px;
+    font-family: 'DM Mono', monospace; font-size: 22px; font-weight: 500;
+    text-align: center;
+    transition: border-color 0.2s var(--ease);
+  }
+  .bw-log-btn {
+    flex: 0 0 auto; height: 56px; padding: 0 22px; border-radius: 14px;
+    font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 500;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    background: var(--accent); color: var(--bg); border: 1px solid var(--accent);
+    transition: transform 0.4s var(--spring), background 0.2s var(--ease);
+  }
+  .bw-log-btn:active { transform: scale(0.96); }
+  .bw-log-btn:hover { background: #d6f74e; }
+  .bw-input-big:focus { border-color: var(--accent); }
+  .bw-stat-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 14px;
+  }
+  .bw-stat {
+    padding: 10px; border-radius: 12px;
+    background: var(--card2); border: 1px solid var(--dark);
+    text-align: center;
+  }
+  .bw-stat-label {
+    font-family: 'DM Mono', monospace; font-size: 10px;
+    letter-spacing: 0.14em; color: var(--muted); text-transform: uppercase;
+  }
+  .bw-stat-val {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px; line-height: 1; margin-top: 6px;
+  }
+  .bw-stat-delta { font-family: 'DM Mono', monospace; font-size: 10px; margin-top: 4px; }
+  .bw-stat-delta.up { color: var(--red); }
+  .bw-stat-delta.down { color: var(--green); }
+  .bw-stat-delta.flat { color: var(--muted); }
+
+  /* chart */
+  .chart-card { padding: 16px; }
+  .chart-svg { width: 100%; height: 160px; display: block; }
+  .chart-axis { stroke: var(--dark); stroke-width: 1; }
+  .chart-line {
+    fill: none; stroke: var(--accent); stroke-width: 2;
+    stroke-linejoin: round; stroke-linecap: round;
+  }
+  .chart-area { fill: url(#chartGrad); }
+  .chart-dot { fill: var(--accent); }
+  .chart-label {
+    font-family: 'DM Mono', monospace; font-size: 9px;
+    fill: var(--muted); letter-spacing: 0.08em;
+  }
+  .chart-empty {
+    text-align: center; color: var(--muted); font-size: 12px; padding: 30px 0;
+  }
+
+  /* progress view */
+  .ex-pick-row {
+    display: flex; gap: 6px; overflow-x: auto;
+    padding: 4px 0 8px 0;
+    scrollbar-width: none;
+  }
+  .ex-pick-row::-webkit-scrollbar { display: none; }
+  .ex-pick {
+    flex-shrink: 0; padding: 8px 14px; border-radius: 999px;
+    background: var(--card); border: 1px solid var(--dark);
+    font-size: 12px; color: var(--muted);
+    white-space: nowrap;
+    transition: color 0.25s var(--ease), border-color 0.25s var(--ease), background 0.25s var(--ease);
+  }
+  .ex-pick.active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+
+  .session-log { display: flex; flex-direction: column; gap: 6px; }
+  .log-row {
+    display: grid; grid-template-columns: 1fr auto auto;
+    gap: 10px; align-items: center;
+    padding: 10px 12px; border-radius: 10px;
+    background: var(--card2); border: 1px solid var(--dark);
+  }
+  .log-date { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); }
+  .log-best { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text); }
+  .log-e1rm { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--accent); }
+
+  /* small util */
+  .row { display: flex; align-items: center; gap: 8px; }
+  .spacer { flex: 1; }
+  .empty {
+    text-align: center; padding: 40px 16px;
+    color: var(--muted); font-size: 13px;
+  }
+  .toast {
+    position: fixed; left: 50%; bottom: 90px; transform: translateX(-50%);
+    background: var(--card); border: 1px solid var(--dark);
+    padding: 10px 16px; border-radius: 999px;
+    font-family: 'DM Mono', monospace; font-size: 11px;
+    color: var(--accent); z-index: 100;
+    box-shadow: 0 12px 32px -12px rgba(0,0,0,0.7);
+    animation: toastIn 0.3s var(--spring);
+  }
+  @keyframes toastIn { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translate(-50%, 0); } }
+
+  /* run plan */
+  .race-card {
+    padding: 22px 18px;
+    background:
+      radial-gradient(circle at 90% 0%, rgba(200,241,53,0.12), transparent 60%),
+      var(--card);
+    border: 1px solid var(--dark);
+  }
+  .race-meta { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.18em; color: var(--muted); text-transform: uppercase; }
+  .race-count {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 56px; line-height: 0.9; letter-spacing: -0.02em;
+    margin: 6px 0 4px 0;
+  }
+  .race-count.race-today { color: var(--accent); }
+  .race-count.race-past { color: var(--muted); }
+  .race-sub { font-size: 12px; color: var(--text); }
+  .race-goal { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--accent); margin-top: 8px; letter-spacing: 0.1em; }
+
+  .run-cards { display: flex; flex-direction: column; gap: 10px; }
+  .run-card {
+    position: relative;
+    padding: 14px 14px 14px 18px;
+    border-radius: 14px;
+    background: var(--card);
+    border: 1px solid var(--dark);
+    text-align: left;
+    color: var(--text);
+    transition: transform 0.4s var(--spring), border-color 0.25s var(--ease);
+    overflow: hidden;
+  }
+  .run-card::before {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+    background: var(--accent);
+  }
+  .run-card:hover { border-color: rgba(200,241,53,0.3); }
+  .run-card:active { transform: scale(0.98); }
+  .run-card.done { opacity: 0.7; }
+  .run-card.done::before { background: var(--green); }
+  .run-card.today { border-color: rgba(200,241,53,0.5); box-shadow: 0 12px 28px -16px rgba(200,241,53,0.3); }
+  .run-card.missed::before { background: var(--muted); }
+  .run-card.race::before { background: linear-gradient(180deg, #FFC700, #E63B2E); width: 6px; }
+  .run-card-head {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    gap: 10px; margin-bottom: 6px;
+  }
+  .run-card-title { font-family: 'Bebas Neue', sans-serif; font-size: 18px; line-height: 1.05; letter-spacing: 0.01em; }
+  .run-card-day { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: 0.16em; text-transform: uppercase; margin-bottom: 2px; }
+  .run-card-row { display: flex; gap: 10px; flex-wrap: wrap; font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); margin-top: 6px; letter-spacing: 0.06em; }
+  .run-card-row b { color: var(--text); font-weight: 500; }
+  .run-status-badge {
+    font-family: 'DM Mono', monospace; font-size: 10px;
+    letter-spacing: 0.16em; padding: 3px 8px; border-radius: 4px;
+    text-transform: uppercase; flex-shrink: 0;
+  }
+  .run-status-badge.done { background: rgba(138,170,31,0.12); color: var(--green); border: 1px solid rgba(138,170,31,0.3); }
+  .run-status-badge.today { background: var(--accent); color: var(--bg); }
+  .run-status-badge.upcoming { background: var(--card2); color: var(--muted); border: 1px solid var(--dark); }
+  .run-status-badge.missed { background: rgba(107,105,96,0.1); color: var(--muted); border: 1px solid var(--dark); }
+  .run-type-badge {
+    font-family: 'DM Mono', monospace; font-size: 10px;
+    letter-spacing: 0.14em; padding: 2px 7px; border-radius: 4px;
+    text-transform: uppercase; flex-shrink: 0;
+    border: 1px solid currentColor;
+  }
+
+  .week-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 14px; border-radius: 12px;
+    background: var(--card2); border: 1px solid var(--dark);
+    margin-bottom: 6px;
+    transition: border-color 0.25s var(--ease);
+  }
+  .week-row.open { border-color: rgba(200,241,53,0.3); }
+  .week-row-title { font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 0.02em; }
+  .week-row-meta { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: 0.08em; }
+  .week-row-arrow { font-size: 12px; color: var(--muted); transition: transform 0.3s var(--spring); }
+  .week-row.open .week-row-arrow { transform: rotate(180deg); }
+  .week-runs { padding: 4px 0 14px 0; }
+
+  /* run detail sheet */
+  .run-detail-section { margin-bottom: 14px; }
+  .run-detail-label { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.18em; color: var(--muted); text-transform: uppercase; margin-bottom: 4px; }
+  .run-detail-val { font-size: 14px; color: var(--text); line-height: 1.5; }
+  .run-detail-val.mono { font-family: 'DM Mono', monospace; }
+  .run-detail-structure {
+    padding: 12px;
+    background: var(--card2); border: 1px solid var(--dark); border-radius: 10px;
+    border-left: 2px solid var(--accent);
+    font-size: 12px; line-height: 1.6; color: var(--text);
+  }
+
+  .run-log-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+  }
+  .run-log-grid .full { grid-column: 1 / -1; }
+  .run-log-field {
+    background: var(--card2); border: 1px solid var(--dark);
+    border-radius: 10px; padding: 10px 12px;
+  }
+  .run-log-field-label { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.16em; color: var(--muted); text-transform: uppercase; margin-bottom: 4px; }
+  .run-log-input {
+    width: 100%; height: 28px; padding: 0; background: transparent; border: none;
+    font-family: 'DM Mono', monospace; font-size: 16px; color: var(--text);
+  }
+  .run-log-input:focus { outline: none; }
+  .run-log-text {
+    width: 100%; min-height: 60px; padding: 0; background: transparent; border: none;
+    font-family: 'DM Sans', sans-serif; font-size: 13px; color: var(--text); line-height: 1.5;
+    resize: vertical;
+  }
+  .run-log-text:focus { outline: none; }
+
+  .ref-table { display: flex; flex-direction: column; gap: 4px; }
+  .ref-row {
+    display: grid; grid-template-columns: 90px auto 1fr; gap: 10px; align-items: center;
+    padding: 10px 12px; border-radius: 10px;
+    background: var(--card2); border: 1px solid var(--dark);
+  }
+  .ref-tier { font-family: 'Bebas Neue', sans-serif; font-size: 14px; letter-spacing: 0.02em; }
+  .ref-val { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--accent); }
+  .ref-desc { font-size: 11px; color: var(--muted); line-height: 1.4; }
+
+  .principle-list { display: flex; flex-direction: column; gap: 6px; }
+  .principle-item {
+    padding: 10px 12px 10px 28px; position: relative;
+    background: var(--card2); border: 1px solid var(--dark); border-radius: 10px;
+    font-size: 12px; line-height: 1.5; color: var(--text);
+  }
+  .principle-item::before {
+    content: '→'; position: absolute; left: 12px; top: 10px;
+    font-family: 'DM Mono', monospace; color: var(--accent);
+  }
+
+  /* deload accent overrides */
+  .deload-mode .ex-target { color: var(--blue); }
+  .deload-banner {
+    padding: 14px 16px; border-radius: 14px;
+    background: rgba(96,165,250,0.06); border: 1px solid rgba(96,165,250,0.25);
+    font-size: 12px; color: var(--blue); margin-bottom: 14px;
+  }
+  .deload-banner b { font-family: 'Bebas Neue'; font-size: 15px; letter-spacing: 0.05em; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js" crossorigin></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js" crossorigin></script>
+
+<script type="text/babel" data-type="module">
+const { useState, useEffect, useRef, useMemo, useCallback } = React;
+
+/* ============================ CONSTANTS ============================ */
+const STORAGE_KEY = 'mfm-v5';
+
+const REST_PROTOCOLS = {
+  main: 90, acc: 40, iso: 30,
+  lateral: 20, face_pull: 20, rdl: 45,
+};
+
+// Tuchscherer/Zourdos RPE chart: rpe -> reps(1-12) -> %1RM
+const RPE_CHART = {
+  10:  [1.000, 0.955, 0.922, 0.892, 0.863, 0.837, 0.811, 0.786, 0.762, 0.739, 0.716, 0.694],
+  9.5: [0.978, 0.939, 0.907, 0.878, 0.850, 0.824, 0.799, 0.774, 0.751, 0.728, 0.706, 0.683],
+  9:   [0.955, 0.922, 0.892, 0.863, 0.837, 0.811, 0.786, 0.762, 0.739, 0.716, 0.694, 0.672],
+  8.5: [0.939, 0.907, 0.878, 0.850, 0.824, 0.799, 0.774, 0.751, 0.728, 0.706, 0.683, 0.661],
+  8:   [0.922, 0.892, 0.863, 0.837, 0.811, 0.786, 0.762, 0.739, 0.716, 0.694, 0.672, 0.650],
+  7.5: [0.907, 0.878, 0.850, 0.824, 0.799, 0.774, 0.751, 0.728, 0.706, 0.683, 0.661, 0.640],
+  7:   [0.892, 0.863, 0.837, 0.811, 0.786, 0.762, 0.739, 0.716, 0.694, 0.672, 0.650, 0.629],
+  6.5: [0.878, 0.850, 0.824, 0.799, 0.774, 0.751, 0.728, 0.706, 0.683, 0.661, 0.640, 0.618],
+  6:   [0.863, 0.837, 0.811, 0.786, 0.762, 0.739, 0.716, 0.694, 0.672, 0.650, 0.629, 0.609],
+};
+const RPE_OPTIONS = [6, 6.5, 7, 7.5, 8, 8.5, 9, 9.5, 10];
+
+/* ============================ PROGRAM DATA ============================ */
+// Exercise object: id, name, type ('main'|'acc'|'cluster'), defaultSets, repMin, repMax, rest, note, clusterPattern?
+const PROGRAM_A = {
+  d1: {
+    name: 'Push — Chest Focus', focus: 'Chest · Triceps · Shoulders',
+    exercises: [
+      { id:'d1e1', name:'Weighted Dip',           type:'main', defaultSets:5, repMin:3,  repMax:5,  rest:'main',    note:'Forward lean for chest. Stop 1–2 reps shy of failure.' },
+      { id:'d1e2', name:'Incline DB Press',       type:'acc',  defaultSets:5, repMin:12, repMax:15, rest:'acc',     note:'Same weight all sets. Chase the pump.' },
+      { id:'d1e3', name:'Cable Fly (Low to High)',type:'acc',  defaultSets:4, repMin:15, repMax:20, rest:'iso',     note:'Full stretch at bottom. Squeeze the lockout.' },
+      { id:'d1e4', name:'DB Lateral Raise',       type:'acc',  defaultSets:5, repMin:18, repMax:25, rest:'lateral', note:'Light. Medial delt pump only.' },
+      { id:'d1e5', name:'Cable Lateral Raise',    type:'acc',  defaultSets:4, repMin:15, repMax:20, rest:'lateral', note:'Unilateral. Constant tension top to bottom.' },
+      { id:'d1e6', name:'Tricep Rope Pushdown',   type:'acc',  defaultSets:4, repMin:15, repMax:20, rest:'lateral', note:'Spread rope at bottom. Squeeze at extension.' },
+      { id:'d1e7', name:'Overhead Tricep Extension', type:'acc', defaultSets:4, repMin:12, repMax:15, rest:'iso',   note:'Full stretch at top — long head priority.' },
+    ],
+  },
+  d2: {
+    name:'Pull — Back Focus', focus:'Lats · Mid-Back · Biceps · Rear Delts',
+    exercises: [
+      { id:'d2e1', name:'Weighted Chin-Up',       type:'main', defaultSets:5, repMin:3,  repMax:5,  rest:'main',     note:'Dead hang. Full chin over bar. No kipping.' },
+      { id:'d2e2', name:'Lat Pulldown',           type:'acc',  defaultSets:5, repMin:12, repMax:15, rest:'acc',      note:'Full stretch at top. Elbows to hips.' },
+      { id:'d2e3', name:'Seated Cable Row',       type:'acc',  defaultSets:4, repMin:12, repMax:15, rest:'iso',      note:'Squeeze mid-back at end range. Brief pause.' },
+      { id:'d2e4', name:'Straight Arm Pulldown',  type:'acc',  defaultSets:4, repMin:15, repMax:20, rest:'lateral',  note:'Pure lat isolation. Elbows to pockets.' },
+      { id:'d2e5', name:'Face Pull',              type:'acc',  defaultSets:4, repMin:20, repMax:25, rest:'face_pull',note:'Always high rep, always light. Rear delt health.' },
+      { id:'d2e6', name:'DB Curl',                type:'acc',  defaultSets:4, repMin:12, repMax:15, rest:'iso',      note:'Supinate fully at top. No swing.' },
+      { id:'d2e7', name:'Cable Curl',             type:'acc',  defaultSets:4, repMin:15, repMax:20, rest:'lateral',  note:'Constant tension. Pump finisher.' },
+    ],
+  },
+  d3: {
+    name:'Legs', focus:'Quads · Glutes · Hamstrings · Calves',
+    exercises: [
+      { id:'d3e1', name:'Bulgarian Split Squat',  type:'main', defaultSets:5, repMin:3,  repMax:5,  rest:'main',    note:"Note imbalances — don't compensate, fix them." },
+      { id:'d3e2', name:'Leg Press',              type:'acc',  defaultSets:5, repMin:15, repMax:20, rest:'acc',     note:"Don't lock knees. Chase the quad pump." },
+      { id:'d3e3', name:'Leg Extension',          type:'acc',  defaultSets:5, repMin:18, repMax:25, rest:'iso',     note:'1s pause at top. Hammer the quad.' },
+      { id:'d3e4', name:'Lying Leg Curl',         type:'acc',  defaultSets:4, repMin:12, repMax:15, rest:'iso',     note:'Point toes. Squeeze peak contraction.' },
+      { id:'d3e5', name:'Hip Thrust',             type:'acc',  defaultSets:4, repMin:15, repMax:20, rest:'acc',     note:'1s pause at top. Drive through heels.' },
+      { id:'d3e6', name:'Standing Calf Raise',    type:'acc',  defaultSets:5, repMin:20, repMax:25, rest:'iso',     note:'Full stretch at bottom. Slow eccentric.' },
+    ],
+  },
+  d4: {
+    name:'Push — Shoulder Focus', focus:'Shoulders · Chest · Triceps',
+    exercises: [
+      { id:'d4e1', name:'Weighted Dip',           type:'main', defaultSets:5, repMin:3,  repMax:5,  rest:'main',    note:'More upright torso — tricep emphasis.' },
+      { id:'d4e2', name:'DB Lateral Raise',       type:'acc',  defaultSets:6, repMin:18, repMax:25, rest:'lateral', note:'Centerpiece. 6 sets. Screaming by set 4.' },
+      { id:'d4e3', name:'Cable Y-Raise',          type:'acc',  defaultSets:4, repMin:15, repMax:20, rest:'iso',     note:'Low cable, Y shape. Light weight only.' },
+      { id:'d4e4', name:'DB Shoulder Press',      type:'acc',  defaultSets:4, repMin:12, repMax:15, rest:'acc',     note:'Moderate weight. Activation over load.' },
+      { id:'d4e5', name:'Incline DB Press',       type:'acc',  defaultSets:4, repMin:12, repMax:15, rest:'acc',     note:'Upper chest. Different angle from Day 01.' },
+      { id:'d4e6', name:'Skull Crusher',          type:'acc',  defaultSets:4, repMin:12, repMax:15, rest:'iso',     note:'Arms angled back for constant tension.' },
+      { id:'d4e7', name:'Tricep Pushdown (bar)',  type:'acc',  defaultSets:3, repMin:15, repMax:20, rest:'lateral', note:'Pump finisher. Elbows pinned.' },
+    ],
+  },
+  d5: {
+    name:'Pull — Hamstring Combo', focus:'Back · Hamstrings · Biceps',
+    exercises: [
+      { id:'d5e1', name:'Weighted Chin-Up',       type:'main', defaultSets:5, repMin:3,  repMax:5,  rest:'main',    note:'Full reset at bottom each set.' },
+      { id:'d5e2', name:'Romanian Deadlift',      type:'acc',  defaultSets:4, repMin:12, repMax:15, rest:'rdl',     note:'Feel the hamstring, not the lower back.' },
+      { id:'d5e3', name:'Seated Leg Curl',        type:'acc',  defaultSets:5, repMin:12, repMax:15, rest:'iso',     note:'Hits hamstring short head. Slow eccentric.' },
+      { id:'d5e4', name:'Single Arm Cable Row',   type:'acc',  defaultSets:4, repMin:12, repMax:15, rest:'lateral', note:'Full lat stretch each rep.' },
+      { id:'d5e5', name:'Chest Supported Row',    type:'acc',  defaultSets:4, repMin:12, repMax:15, rest:'iso',     note:'Incline bench DBs. Pure mid-back.' },
+      { id:'d5e6', name:'Hammer Curl',            type:'acc',  defaultSets:4, repMin:12, repMax:15, rest:'iso',     note:'Neutral grip. Brachialis emphasis.' },
+      { id:'d5e7', name:'Incline DB Curl',        type:'acc',  defaultSets:3, repMin:12, repMax:15, rest:'lateral', note:'Long head stretch. Arms behind body.' },
+    ],
+  },
+};
+
+const PROGRAM_B = {
+  d1: {
+    name:'Push — Chest Focus', focus:'Chest · Triceps · Shoulders',
+    exercises: [
+      { id:'d1e1', name:'Weighted Dip',                  type:'main', defaultSets:5, repMin:3,  repMax:5,  rest:'main',    note:'Forward lean for chest. Stop 1–2 reps shy of failure.' },
+      { id:'d1e2', name:'Hammer Strength Incline Press', type:'acc',  defaultSets:5, repMin:12, repMax:15, rest:'acc',     note:'Load plates. Easier to push weight.' },
+      { id:'d1e3', name:'Pec Deck / Machine Fly',        type:'acc',  defaultSets:4, repMin:15, repMax:20, rest:'iso',     note:'Seat-based full ROM. Squeeze the contraction.' },
+      { id:'d1e4', name:'Machine Lateral Raise',         type:'acc',  defaultSets:5, repMin:18, repMax:25, rest:'lateral', note:'Guided arc. Same pump intent as DB raises.' },
+      { id:'d1e5', name:'Cable Lateral Raise',           type:'acc',  defaultSets:4, repMin:15, repMax:20, rest:'lateral', note:'Unilateral. Keep tension on the delt.' },
+      { id:'d1e6', name:'Cable Overhead Tricep Ext',     type:'acc',  defaultSets:4, repMin:15, repMax:20, rest:'lateral', note:'Rope or single handle. Long head priority.' },
+      { id:'d1e7', name:'Cable Skull Crusher',           type:'acc',  defaultSets:4, repMin:12, repMax:15, rest:'iso',     note:'EZ bar attachment. Easier on elbows.' },
+    ],
+  },
+  d2: {
+    name:'Pull — Back Focus', focus:'Lats · Mid-Back · Biceps · Rear Delts',
+    exercises: [
+      { id:'d2e1', name:'Weighted Chin-Up',         type:'main', defaultSets:5, repMin:3,  repMax:5,  rest:'main',    note:'Dead hang. Full chin over bar. No kipping.' },
+      { id:'d2e2', name:'V-Bar Pulldown',           type:'acc',  defaultSets:5, repMin:12, repMax:15, rest:'acc',     note:'Neutral grip. More bicep involvement than wide grip.' },
+      { id:'d2e3', name:'Chest Supported DB Row',   type:'acc',  defaultSets:4, repMin:12, repMax:15, rest:'iso',     note:'Lower back removed. Pure mid-back.' },
+      { id:'d2e4', name:'DB or Cable Pullover',     type:'acc',  defaultSets:4, repMin:15, repMax:20, rest:'lateral', note:'Full lat stretch. Arms nearly straight throughout.' },
+      { id:'d2e5', name:'Reverse Pec Deck',         type:'acc',  defaultSets:4, repMin:20, repMax:25, rest:'lateral', note:'Rear delt isolation. Light weight, feel the squeeze.' },
+      { id:'d2e6', name:'Preacher Curl',            type:'acc',  defaultSets:4, repMin:12, repMax:15, rest:'iso',     note:'Removes cheating. Full peak contraction every rep.' },
+      { id:'d2e7', name:'Cable Curl',               type:'acc',  defaultSets:4, repMin:15, repMax:20, rest:'lateral', note:'Constant tension. Pump finisher.' },
+    ],
+  },
+  d3: {
+    name:'Legs', focus:'Quads · Glutes · Hamstrings · Calves',
+    exercises: [
+      { id:'d3e1', name:'Bulgarian Split Squat',  type:'main', defaultSets:5, repMin:3,  repMax:5,  rest:'main',    note:"Note imbalances — don't compensate, fix them." },
+      { id:'d3e2', name:'Hack Squat',             type:'acc',  defaultSets:5, repMin:15, repMax:20, rest:'acc',     note:'Deep range of motion. Brutal quad isolation.' },
+      { id:'d3e3', name:'Single Leg Extension',   type:'acc',  defaultSets:5, repMin:18, repMax:25, rest:'iso',     note:'Per leg. Fixes quad imbalances.' },
+      { id:'d3e4', name:'Seated Leg Curl',        type:'acc',  defaultSets:4, repMin:12, repMax:15, rest:'iso',     note:'Hits hamstring short head.' },
+      { id:'d3e5', name:'Cable Pull Through',     type:'acc',  defaultSets:4, repMin:15, repMax:20, rest:'acc',     note:'Constant tension glute drive. Hinge pattern.' },
+      { id:'d3e6', name:'Seated Calf Raise',      type:'acc',  defaultSets:5, repMin:20, repMax:25, rest:'iso',     note:'Hits soleus. Slow eccentric.' },
+    ],
+  },
+  d4: {
+    name:'Push — Shoulder Focus', focus:'Shoulders · Chest · Triceps',
+    exercises: [
+      { id:'d4e1', name:'Weighted Dip',                   type:'main', defaultSets:5, repMin:3,  repMax:5,  rest:'main',    note:'More upright torso — tricep emphasis.' },
+      { id:'d4e2', name:'Cable Lateral Raise',            type:'acc',  defaultSets:6, repMin:18, repMax:25, rest:'lateral', note:'Constant tension. 6 sets. Screaming by set 4.' },
+      { id:'d4e3', name:'Cable Y-Raise',                  type:'acc',  defaultSets:4, repMin:15, repMax:20, rest:'iso',     note:'Low cable, Y shape. Light weight only.' },
+      { id:'d4e4', name:'Hammer Strength Shoulder Press', type:'acc',  defaultSets:4, repMin:12, repMax:15, rest:'acc',     note:'Machine. Easier to push through full range.' },
+      { id:'d4e5', name:'Cable Crossover (High to Low)',  type:'acc',  defaultSets:4, repMin:15, repMax:20, rest:'iso',     note:'Lower chest emphasis. Squeeze at the cross.' },
+      { id:'d4e6', name:'Cable Skull Crusher',            type:'acc',  defaultSets:4, repMin:12, repMax:15, rest:'lateral', note:'Constant tension. Easier on elbows.' },
+      { id:'d4e7', name:'Tricep Pushdown (bar)',          type:'acc',  defaultSets:3, repMin:15, repMax:20, rest:'lateral', note:'Pump finisher. Elbows pinned.' },
+    ],
+  },
+  d5: {
+    name:'Pull — Hamstring Combo', focus:'Back · Hamstrings · Biceps',
+    exercises: [
+      { id:'d5e1', name:'Weighted Chin-Up',       type:'main', defaultSets:5, repMin:3,  repMax:5,  rest:'main',    note:'Full reset at bottom each set.' },
+      { id:'d5e2', name:'Stiff Leg Deadlift',     type:'acc',  defaultSets:4, repMin:12, repMax:15, rest:'rdl',     note:'Legs straighter than RDL. More hamstring length.' },
+      { id:'d5e3', name:'Single Leg Curl',        type:'acc',  defaultSets:5, repMin:12, repMax:15, rest:'iso',     note:'Per leg. Addresses imbalances.' },
+      { id:'d5e4', name:'Hammer Strength Row',    type:'acc',  defaultSets:4, repMin:12, repMax:15, rest:'lateral', note:'Plate loaded machine. Different feel from cable row.' },
+      { id:'d5e5', name:'Seal Row',               type:'acc',  defaultSets:4, repMin:12, repMax:15, rest:'iso',     note:'Lying on bench with DBs. Strictest row variation.' },
+      { id:'d5e6', name:'Cross Body Hammer Curl', type:'acc',  defaultSets:4, repMin:12, repMax:15, rest:'iso',     note:'Across the body. Brachialis emphasis.' },
+      { id:'d5e7', name:'Incline DB Curl',        type:'acc',  defaultSets:3, repMin:12, repMax:15, rest:'lateral', note:'Long head stretch. Arms behind body.' },
+    ],
+  },
+};
+
+// Preset alternatives by slot id. Same slot id across A and B uses the same options.
+const ALTERNATIVES = {
+  // Mains (heavy compound slot)
+  d1e1: ['Weighted Dip','Dip Machine','BB Bench Press','DB Bench Press','Hammer Strength Bench Press','Smith Bench Press','Machine Chest Press','Bench Dip'],
+  d2e1: ['Weighted Chin-Up','Weighted Pull-Up','Neutral-Grip Pull-Up','Heavy Lat Pulldown','Pendlay Row','BB Row','Assisted Pull-Up'],
+  d3e1: ['Bulgarian Split Squat','V-Squat','Back Squat','Front Squat','Hack Squat (heavy)','Smith Squat','Walking Lunge (DB)','Trap Bar Deadlift','Goblet Squat'],
+  d4e1: ['Weighted Dip','Dip Machine','BB Bench Press','DB Bench Press','Hammer Strength Bench Press','Smith Bench Press','Close-Grip Bench Press'],
+  d5e1: ['Weighted Chin-Up','Weighted Pull-Up','Neutral-Grip Pull-Up','Heavy Lat Pulldown','Pendlay Row','BB Row'],
+  // Day 1
+  d1e2: ['Incline DB Press','Hammer Strength Incline Press','Smith Incline Press','Incline BB Press','Machine Chest Press'],
+  d1e3: ['Cable Fly (Low to High)','Pec Deck / Machine Fly','DB Fly','Cable Crossover','Pec Deck'],
+  d1e4: ['DB Lateral Raise','Cable Lateral Raise','Machine Lateral Raise','Lean-Away DB Lateral'],
+  d1e5: ['Cable Lateral Raise','DB Lateral Raise','Machine Lateral Raise','Y-Raise'],
+  d1e6: ['Tricep Rope Pushdown','Bar Pushdown','Cable Overhead Tricep Ext','Single-Arm Pushdown'],
+  d1e7: ['Overhead Tricep Extension','Cable Skull Crusher','Skull Crusher','Lying Tricep Ext','Cable Overhead Tricep Ext'],
+  // Day 2
+  d2e2: ['Lat Pulldown','V-Bar Pulldown','Wide-Grip Pulldown','Cable Pullover','Single-Arm Pulldown'],
+  d2e3: ['Seated Cable Row','Chest Supported DB Row','Hammer Strength Row','T-Bar Row','Pendlay Row'],
+  d2e4: ['Straight Arm Pulldown','DB Pullover','Cable Pullover'],
+  d2e5: ['Face Pull','Reverse Pec Deck','Rear Delt Cable Fly','Bent-over DB Reverse Fly'],
+  d2e6: ['DB Curl','Hammer Curl','Preacher Curl','EZ Bar Curl','Incline DB Curl'],
+  d2e7: ['Cable Curl','DB Curl','Hammer Curl','Preacher Curl'],
+  // Day 3
+  d3e2: ['Leg Press','Hack Squat','Back Squat','Front Squat','Bulgarian Split Squat'],
+  d3e3: ['Leg Extension','Single Leg Extension','Sissy Squat'],
+  d3e4: ['Lying Leg Curl','Seated Leg Curl','Single Leg Curl','Nordic Curl'],
+  d3e5: ['Hip Thrust','Cable Pull Through','Glute Bridge','45° Hyperextension'],
+  d3e6: ['Standing Calf Raise','Seated Calf Raise','Smith Calf Raise','Donkey Calf Raise','Leg Press Calf Raise'],
+  // Day 4
+  d4e2: ['DB Lateral Raise','Cable Lateral Raise','Machine Lateral Raise'],
+  d4e3: ['Cable Y-Raise','Reverse Pec Deck','Rear Delt Fly','Face Pull'],
+  d4e4: ['DB Shoulder Press','Hammer Strength Shoulder Press','Machine Shoulder Press','Smith OHP','Seated BB OHP'],
+  d4e5: ['Incline DB Press','Hammer Strength Incline Press','Smith Incline','Cable Crossover'],
+  d4e6: ['Skull Crusher','Cable Skull Crusher','Lying Tricep Ext','Overhead Tricep Ext'],
+  d4e7: ['Tricep Pushdown (bar)','Rope Pushdown','Single-Arm Pushdown','Cable Skull Crusher'],
+  // Day 5
+  d5e2: ['Romanian Deadlift','Stiff Leg Deadlift','Cable Pull Through','Good Morning'],
+  d5e3: ['Seated Leg Curl','Lying Leg Curl','Single Leg Curl'],
+  d5e4: ['Single Arm Cable Row','Hammer Strength Row','Seal Row','Chest Supported Row'],
+  d5e5: ['Chest Supported Row','DB Row','Seal Row','Pendlay Row','T-Bar Row'],
+  d5e6: ['Hammer Curl','DB Curl','Cross Body Hammer Curl'],
+  d5e7: ['Incline DB Curl','DB Curl','Cable Curl','Hammer Curl'],
+};
+
+/* ============================ RUN PLAN ============================ */
+const RUN_PLAN = {
+  goal: 'Sub-60 10K',
+  goalPace: '6:00/km · 6.2 mph · 9:39/mi',
+  raceDate: '2026-07-25',
+  startDate: '2026-04-25',
+  weeks: [
+    { week:0, phase:'Baseline', runs:[
+      { id:'w0r1', date:'2026-04-25', day:'Sat', name:'Baseline Run', type:'baseline', duration:30, pace:'5.0 mph (~12:00/mi)', hr:'Avg 169, Max 179 (Z4-5)',
+        structure:'Steady run',
+        notes:'Aerobic base deconditioned. 5.0 mph = threshold effort, not easy. Plan adjusted to start with run/walk + slower paces.' },
+      { id:'w0r2', date:'2026-04-27', day:'Mon', name:'Run/Walk', type:'easy', duration:30, pace:'Run 4.3 / Walk 3.5', hr:'Avg 154, 11+ min in Z1-2',
+        structure:'5 min walk + 6× (3 min run / 1 min walk)',
+        notes:'Avg HR dropped 15 bpm vs baseline. Run/walk approach validated. Continuing with adjusted paces.' },
+    ]},
+    { week:1, phase:'Base Rebuild', runs:[
+      { id:'w1r1', date:'2026-05-04', day:'Mon', name:'Run/Walk', type:'easy', duration:30, pace:'Run 4.5 / Walk 3.5', hr:'Z2-low Z3 (cap 155)',
+        structure:'5 min walk warmup + 6 rounds: 3 min run @ 4.5 / 1 min walk @ 3.5 + 1 min walk cooldown',
+        notes:'Slight pace bump from baseline. If HR exceeds 155, drop to 4.3 mph or extend walk.' },
+      { id:'w1r2', date:'2026-05-07', day:'Thu', name:'Run/Walk', type:'easy', duration:30, pace:'Run 4.3 / Walk 3.5', hr:'Zone 1-2 (cap 145)',
+        structure:'5 min walk warmup + 6 rounds: 3 min run @ 4.3 / 1 min walk @ 3.5 + 1 min walk cooldown',
+        notes:'Pure aerobic recovery. Strict on HR cap — this is base building.' },
+      { id:'w1r3', date:'2026-05-09', day:'Sat', name:'Long Run/Walk', type:'long', duration:40, pace:'Run 4.5 / Walk 3.5', hr:'Zone 2 (cap 150)',
+        structure:'5 min walk + 7 rounds: 4 min run @ 4.5 / 1 min walk @ 3.5',
+        notes:'Long aerobic session. Walk breaks let HR settle — that\'s the point.' },
+    ]},
+    { week:2, phase:'Base Rebuild', runs:[
+      { id:'w2r1', date:'2026-05-11', day:'Mon', name:'Run/Walk', type:'easy', duration:30, pace:'Run 4.7 / Walk 3.5', hr:'Zone 2 (cap 155)',
+        structure:'5 min walk + 5 rounds: 4 min run @ 4.7 / 1 min walk @ 3.5',
+        notes:'Slight pace bump. Watch HR — if drifting up, hold pace, don\'t push.' },
+      { id:'w2r2', date:'2026-05-14', day:'Thu', name:'Run/Walk', type:'easy', duration:30, pace:'Run 4.5 / Walk 3.5', hr:'Zone 1-2 (cap 145)',
+        structure:'5 min walk + 6 rounds: 3 min run @ 4.5 / 1 min walk @ 3.5 + 1 min walk cooldown',
+        notes:'Recovery. Aerobic only. Should feel easier than week 1.' },
+      { id:'w2r3', date:'2026-05-16', day:'Sat', name:'Long Run/Walk', type:'long', duration:45, pace:'Run 4.7 / Walk 3.5', hr:'Zone 2 (cap 150)',
+        structure:'5 min walk + 7 rounds: 5 min run @ 4.7 / 1 min walk @ 3.5',
+        notes:'Building running duration between walks.' },
+    ]},
+    { week:3, phase:'Base Rebuild', runs:[
+      { id:'w3r1', date:'2026-05-18', day:'Mon', name:'Continuous + Pickups', type:'easy', duration:30, pace:'4.8 base / 6.0 pickups', hr:'Z2 base + Z3-4 pickups',
+        structure:'5 min walk warmup + 20 min continuous @ 4.8 mph + 4× 30 sec @ 6.0 mph (60 sec easy between)',
+        notes:'First continuous run! If HR exceeds 155 at 4.8, drop to 4.6.' },
+      { id:'w3r2', date:'2026-05-21', day:'Thu', name:'Easy Continuous', type:'easy', duration:30, pace:'4.7 - 5.0', hr:'Zone 1-2 (cap 150)',
+        structure:'5 min walk warmup + 25 min continuous',
+        notes:'First continuous easy run. Slow if HR climbs above cap.' },
+      { id:'w3r3', date:'2026-05-23', day:'Sat', name:'Long', type:'long', duration:50, pace:'4.8 - 5.0', hr:'Zone 2 (cap 152)',
+        structure:'5 min walk + 45 min continuous',
+        notes:'First continuous long run. Walk breaks OK if HR spikes.' },
+    ]},
+    { week:4, phase:'Base Rebuild', runs:[
+      { id:'w4r1', date:'2026-05-25', day:'Mon', name:'Easy + Pickups', type:'easy', duration:30, pace:'5.0 base / 6.2 pickups', hr:'Zone 2-3 + Z4 pickups',
+        structure:'5 min walk warmup + 20 min continuous @ 5.0 mph + 5× 30 sec @ 6.2 mph (60 sec easy)',
+        notes:'Touching goal pace briefly. Pickups should feel like work.' },
+      { id:'w4r2', date:'2026-05-28', day:'Thu', name:'Easy', type:'easy', duration:30, pace:'4.8 - 5.0', hr:'Zone 2 (cap 152)',
+        structure:'5 min walk + 25 min continuous',
+        notes:'Continuous easy. HR should be settling lower at same pace vs week 1.' },
+      { id:'w4r3', date:'2026-05-30', day:'Sat', name:'Long', type:'long', duration:55, pace:'5.0', hr:'Zone 2-3 (cap 158)',
+        structure:'5 min walk + 50 min continuous',
+        notes:'End of base. Compare HR to baseline — should be 5-10 bpm lower at 5.0 mph.' },
+    ]},
+    { week:5, phase:'Speed Build', runs:[
+      { id:'w5r1', date:'2026-06-01', day:'Mon', name:'Intervals', type:'intervals', duration:30, pace:'5.0 / 6.5 work / 4.5 jog', hr:'Z2 / Z4 work / Z2 jog',
+        structure:'5 min Z2 warmup + 5× 2 min @ 6.5 mph w/ 90 sec jog @ 4.5 + 5 min cooldown',
+        notes:'Intro to intervals. Shorter reps to keep form clean. Last rep may hit Z5.' },
+      { id:'w5r2', date:'2026-06-04', day:'Thu', name:'Easy', type:'easy', duration:30, pace:'5.0', hr:'Zone 2 (cap 152)',
+        structure:'5 min walk + 25 min continuous',
+        notes:'Recovery. Strict aerobic — critical with intervals on Monday.' },
+      { id:'w5r3', date:'2026-06-06', day:'Sat', name:'Long', type:'long', duration:55, pace:'5.0', hr:'Zone 2-3 (cap 158)',
+        structure:'5 min walk + 50 min continuous',
+        notes:'Aerobic engine work. Patience. Walk if HR spikes above 160.' },
+    ]},
+    { week:6, phase:'Speed Build', runs:[
+      { id:'w6r1', date:'2026-06-08', day:'Mon', name:'Intervals', type:'intervals', duration:30, pace:'5.0 / 6.5 work / 4.5 jog', hr:'Z2 / Z4 work / Z2 jog',
+        structure:'5 min warmup + 4× 3 min @ 6.5 mph w/ 90 sec jog @ 4.5 + 5 min cooldown',
+        notes:'Longer reps at same pace. Sustained Z4. Don\'t let HR spike to Z5 early.' },
+      { id:'w6r2', date:'2026-06-11', day:'Thu', name:'Easy', type:'easy', duration:30, pace:'5.0', hr:'Zone 2 (cap 152)',
+        structure:'5 min walk + 25 min continuous',
+        notes:'Easy. Save legs for long run.' },
+      { id:'w6r3', date:'2026-06-13', day:'Sat', name:'Long', type:'long', duration:60, pace:'5.0', hr:'Zone 2-3 (cap 158)',
+        structure:'5 min walk + 55 min continuous',
+        notes:'First hour-long run. Fuel beforehand. Walk breaks OK.' },
+    ]},
+    { week:7, phase:'Speed Build', runs:[
+      { id:'w7r1', date:'2026-06-15', day:'Mon', name:'Intervals', type:'intervals', duration:30, pace:'5.0 / 6.5 work / 4.5 jog', hr:'Z2 / Z4 work / Z2 jog',
+        structure:'5 min warmup + 5× 2.5 min @ 6.5 mph w/ 90 sec jog @ 4.5 + 5 min cooldown',
+        notes:'Higher volume at threshold. Last rep should hit top of Z4.' },
+      { id:'w7r2', date:'2026-06-18', day:'Thu', name:'Easy', type:'easy', duration:30, pace:'5.0', hr:'Zone 2 (cap 152)',
+        structure:'5 min walk + 25 min continuous',
+        notes:'Easy recovery.' },
+      { id:'w7r3', date:'2026-06-20', day:'Sat', name:'Long', type:'long', duration:55, pace:'5.0', hr:'Zone 2-3 (cap 158)',
+        structure:'5 min walk + 50 min continuous',
+        notes:'Slight pullback before next week\'s push.' },
+    ]},
+    { week:8, phase:'Speed Build', runs:[
+      { id:'w8r1', date:'2026-06-22', day:'Mon', name:'Intervals', type:'intervals', duration:30, pace:'5.0 / 6.3 work / 4.5 jog', hr:'Z2 / Z3-4 work / Z2 jog',
+        structure:'5 min warmup + 4× 3 min @ 6.3 mph (goal pace+) w/ 90 sec jog @ 4.5 + 5 min cooldown',
+        notes:'Peak interval session. Pace shifts toward goal — sustained, not hammered.' },
+      { id:'w8r2', date:'2026-06-25', day:'Thu', name:'Easy', type:'easy', duration:30, pace:'5.0', hr:'Zone 2 (cap 152)',
+        structure:'5 min walk + 25 min continuous',
+        notes:'Recovery essential. Aerobic only.' },
+      { id:'w8r3', date:'2026-06-27', day:'Sat', name:'Long', type:'long', duration:65, pace:'5.0', hr:'Zone 2-3 (cap 160)',
+        structure:'5 min walk + 60 min continuous',
+        notes:'Longest run. ~5.5 mi aerobic base.' },
+    ]},
+    { week:9, phase:'Race-Specific', runs:[
+      { id:'w9r1', date:'2026-06-29', day:'Mon', name:'Tempo', type:'tempo', duration:30, pace:'5.0 warmup / 6.2 tempo', hr:'Z2 / Z3-4 / Z2',
+        structure:'5 min Z2 warmup + 12 min @ 6.2 mph (goal pace) + 8 min cooldown',
+        notes:'First sustained block at goal pace. Confirms whether sub-60 is realistic.' },
+      { id:'w9r2', date:'2026-07-02', day:'Thu', name:'Easy', type:'easy', duration:30, pace:'5.0', hr:'Zone 2 (cap 152)',
+        structure:'5 min walk + 25 min continuous',
+        notes:'Recovery. Legs fresh by Saturday.' },
+      { id:'w9r3', date:'2026-07-04', day:'Sat', name:'Long w/ Goal Pace', type:'long', duration:60, pace:'5.0 easy / 6.2 goal', hr:'Z2 / Z3-4 at goal pace',
+        structure:'5 min walk + 35 min @ 5.0 + 15 min @ 6.2 mph + 5 min cooldown',
+        notes:'Note your HR at 6.2 mph — that\'s your race day HR target.' },
+    ]},
+    { week:10, phase:'Race-Specific', runs:[
+      { id:'w10r1', date:'2026-07-06', day:'Mon', name:'Tempo', type:'tempo', duration:30, pace:'5.0 warmup / 6.2 tempo', hr:'Z2 / Z3-4 / Z2',
+        structure:'5 min warmup + 18 min @ 6.2 mph + 7 min cooldown',
+        notes:'Longest goal-pace block in a quality session. If you can hold this, sub-60 is locked.' },
+      { id:'w10r2', date:'2026-07-09', day:'Thu', name:'Easy', type:'easy', duration:30, pace:'5.0', hr:'Zone 2 (cap 152)',
+        structure:'5 min walk + 25 min continuous',
+        notes:'Easy. Trust the taper coming.' },
+      { id:'w10r3', date:'2026-07-11', day:'Sat', name:'Race Simulation', type:'tempo', duration:65, pace:'5.0 easy / 6.2 goal', hr:'Z2 / Z4 at goal pace',
+        structure:'10 min warmup + 5 km (~30 min) @ 6.2 mph + 20 min easy cooldown',
+        notes:'Half of race effort. HR should match race-day target.' },
+    ]},
+    { week:11, phase:'Race-Specific', runs:[
+      { id:'w11r1', date:'2026-07-13', day:'Mon', name:'Sharpener', type:'intervals', duration:30, pace:'5.0 / 6.3 work / 4.5 jog', hr:'Z2 / Z4 / Z2',
+        structure:'5 min warmup + 4× 3 min @ 6.3 mph w/ 90 sec jog @ 4.5 + 5 min cooldown',
+        notes:'Sharpening. Volume drops, intensity stays.' },
+      { id:'w11r2', date:'2026-07-16', day:'Thu', name:'Easy', type:'easy', duration:30, pace:'5.0', hr:'Zone 2 (cap 152)',
+        structure:'5 min walk + 25 min continuous',
+        notes:'Easy. Start to feel fresh.' },
+      { id:'w11r3', date:'2026-07-18', day:'Sat', name:'Goal Pace', type:'tempo', duration:50, pace:'5.0 easy / 6.2 goal', hr:'Z2 / Z3-4 goal pace',
+        structure:'10 min warmup + 4 km (~24 min) @ 6.2 mph + 10 min cooldown',
+        notes:'Last meaningful workout. Lock in pace + HR.' },
+    ]},
+    { week:12, phase:'Race Week', runs:[
+      { id:'w12r1', date:'2026-07-20', day:'Mon', name:'Shakeout', type:'shakeout', duration:30, pace:'5.0 / 6.2 short bursts', hr:'Z2 / brief Z3-4',
+        structure:'5 min walk + 18 min @ 5.0 + 3× 1 min @ 6.2 mph w/ 90 sec easy',
+        notes:'Wake up the system. Easy and snappy.' },
+      { id:'w12r2', date:'2026-07-23', day:'Thu', name:'Mini Shakeout', type:'shakeout', duration:20, pace:'5.0', hr:'Zone 1-2',
+        structure:'5 min walk + 15 min continuous',
+        notes:'Very easy. Less is more this week. Don\'t go full 30 min.' },
+      { id:'w12r3', date:'2026-07-25', day:'Sat', name:'RACE DAY · 10K', type:'race', duration:60, pace:'6.2 mph race effort', hr:'Z3-4 → Z4-5',
+        structure:'First 2 km @ 6.1 mph (Z3-4), middle 6 km @ 6.2 mph (Z4), last 2 km @ 6.3+ if strong (Z4-5)',
+        notes:'Don\'t go out hot. HR will climb naturally — let it. Negative split.' },
+    ]},
+  ],
+};
+
+const PACE_REFERENCE = [
+  { tier:'Easy',           mph:'5.0–5.5',    desc:'Conversational, can speak full sentences' },
+  { tier:'Goal Pace',      mph:'6.2',        desc:'Target 10K race pace (6:00/km)' },
+  { tier:'Tempo',          mph:'6.3–6.5',    desc:'Comfortably hard, ~7/10 effort' },
+  { tier:'Threshold',      mph:'6.7–6.8',    desc:'Hard, ~8/10 effort, sustained' },
+  { tier:'Interval (5K)',  mph:'6.8–7.0',    desc:'Hard, breathing heavy' },
+  { tier:'Interval (fast)',mph:'7.5–7.8',    desc:'Very hard, short bursts only' },
+];
+
+const HR_ZONES = [
+  { zone:'Z1', range:'<140 bpm',     name:'Recovery',     desc:'Very easy, brisk walk effort' },
+  { zone:'Z2', range:'140–150 bpm',  name:'Aerobic base', desc:'Conversational, nose breathing possible' },
+  { zone:'Z3', range:'151–163 bpm',  name:'Tempo',        desc:'Comfortably hard, can speak short phrases' },
+  { zone:'Z4', range:'164–175 bpm',  name:'Threshold',    desc:'Hard, can only get out a few words' },
+  { zone:'Z5', range:'176+ bpm',     name:'VO2 max',      desc:'Max effort, can\'t speak' },
+];
+
+const RUN_PRINCIPLES = [
+  'HR rules everything. On Z2 runs, slow down whenever HR drifts to Z3 — even if it means walking.',
+  'Polarized: ~80% easy (Z1-2), ~20% hard (Z4-5). Avoid the gray zone (Z3) on easy days.',
+  'Same pace at lower HR = improving. Same HR at faster pace = improving. Either is a win.',
+  'Set treadmill incline to 1.0% to better simulate outdoor running effort.',
+  '5 min walk warmup before every run, 3-5 min cooldown after.',
+  'If you miss a run, skip it — don\'t make it up. Move to the next session.',
+];
+
+const TYPE_STYLES = {
+  baseline: { color:'#B87FFF', label:'BASELINE' },
+  easy:     { color:'#8AAA1F', label:'EASY' },
+  long:     { color:'#C8F135', label:'LONG' },
+  tempo:    { color:'#F0C060', label:'TEMPO' },
+  intervals:{ color:'#E63B2E', label:'INTERVALS' },
+  shakeout: { color:'#60A5FA', label:'SHAKEOUT' },
+  race:     { color:'#FFC700', label:'RACE DAY' },
+};
+
+/* ============================ HELPERS ============================ */
+const getCycleWeek  = (w) => ((w % 5) + 5) % 5;
+const getCycleNum   = (w) => Math.floor(w / 5) + 1;
+const isDeloadWeek  = (w) => getCycleWeek(w) === 4;
+const isAWeek       = (w) => { const cw = getCycleWeek(w); return cw === 0 || cw === 2; };
+const getProgram    = (w) => isAWeek(w) ? PROGRAM_A : PROGRAM_B;
+const getMainScheme = (w) => [5, 4, 3, 5][w % 4];
+const getWeekLabel  = (w) => ['A1','B1','A2','B2','DELOAD'][getCycleWeek(w)];
+const getWeekRepStr = (w) => isDeloadWeek(w) ? 'DELOAD' : `${getMainScheme(w)}s`;
+
+const todayStr = () => {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+};
+
+const fmtDate = (s) => {
+  const [y,m,d] = s.split('-');
+  return `${m}/${d}`;
+};
+
+const fmtMMSS = (ms) => {
+  if (!ms || ms < 0) return '—';
+  const total = Math.floor(ms / 1000);
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${m}:${String(s).padStart(2,'0')}`;
+};
+
+const exerciseDuration = (sets) => {
+  const dones = (sets || []).filter(s => s.done && s.doneAt);
+  if (dones.length < 1) return null;
+  const first = Math.min(...dones.map(s => s.doneAt));
+  const last  = Math.max(...dones.map(s => s.doneAt));
+  return last - first;
+};
+
+const totalVolume = (sets) =>
+  (sets || []).filter(s => s.weight && s.reps).reduce((a,s) => a + safeNum(s.weight) * safeNum(s.reps), 0);
+
+const density = (volume, durationMs) => {
+  if (!volume || !durationMs || durationMs < 30000) return null; // need ≥30s
+  return volume / (durationMs / 60000);
+};
+
+const roundTo2_5 = (val) => Math.round(val / 2.5) * 2.5;
+
+const calcE1RM = (weight, reps, rpe) => {
+  if (!weight || !reps || !rpe) return 0;
+  if (reps < 1 || reps > 12) return 0;
+  const row = RPE_CHART[rpe];
+  if (!row) return 0;
+  const pct = row[reps - 1];
+  return weight / pct;
+};
+
+const pctFor = (targetReps, targetRPE) => {
+  const r = Math.max(1, Math.min(12, targetReps));
+  const row = RPE_CHART[targetRPE] || RPE_CHART[8];
+  return row[r - 1];
+};
+
+const sessionKey = (week, dayId) => `w${week}_${dayId}`;
+
+const safeNum = (v) => {
+  const n = parseFloat(v);
+  return Number.isFinite(n) ? n : 0;
+};
+
+const bestSet = (sets) => {
+  let best = null; let bestE = 0;
+  for (const s of sets) {
+    if (!s.weight || !s.reps || !s.rpe) continue;
+    const e = calcE1RM(safeNum(s.weight), safeNum(s.reps), safeNum(s.rpe));
+    if (e > bestE) { bestE = e; best = s; }
+  }
+  return best ? { ...best, e1rm: bestE } : null;
+};
+
+const avgRPE = (sets) => {
+  const xs = sets.filter(s => s.rpe).map(s => safeNum(s.rpe));
+  if (!xs.length) return 0;
+  return xs.reduce((a,b) => a+b, 0) / xs.length;
+};
+
+/* ============================ RUN HELPERS ============================ */
+const allRuns = () => RUN_PLAN.weeks.flatMap(w => w.runs.map(r => ({ ...r, week: w.week, phase: w.phase })));
+
+function daysBetween(a, b) {
+  const da = new Date(a + 'T00:00:00');
+  const db = new Date(b + 'T00:00:00');
+  return Math.round((db - da) / 86400000);
+}
+
+function runStatus(run, runHistory) {
+  if (runHistory[run.id]?.complete) return 'done';
+  const today = todayStr();
+  const diff = daysBetween(today, run.date);
+  if (diff === 0) return 'today';
+  if (diff > 0) return 'upcoming';
+  return 'missed';
+}
+
+function findCurrentRunWeek() {
+  const today = todayStr();
+  for (const w of RUN_PLAN.weeks) {
+    const last = w.runs[w.runs.length - 1];
+    if (daysBetween(today, last.date) >= 0) return w.week;
+  }
+  return RUN_PLAN.weeks[RUN_PLAN.weeks.length - 1].week;
+}
+
+function findTodayOrNextRun(runHistory) {
+  const runs = allRuns();
+  const today = todayStr();
+  // today exact
+  const exact = runs.find(r => r.date === today);
+  if (exact) return exact;
+  // next future
+  const future = runs.find(r => daysBetween(today, r.date) > 0);
+  return future || null;
+}
+
+/* ============================ PROGRESSION ============================ */
+function computeMainTarget(history, exId, weekScheme) {
+  const past = history.filter(h => h.exId === exId && !h.deload).slice(-5);
+  if (!past.length) return null;
+  const last = past[past.length - 1];
+  const lastBest = bestSet(last.sets);
+  if (!lastBest) return null;
+  const lastAvgRPE = avgRPE(last.sets);
+  let targetRPE = 7.5;
+  if (lastAvgRPE && lastAvgRPE <= 6.5) targetRPE = 8.0;
+  else if (lastAvgRPE && lastAvgRPE >= 9) targetRPE = 7.0;
+  const pct = pctFor(weekScheme, targetRPE);
+  const targetWeight = roundTo2_5(lastBest.e1rm * pct);
+  return { weight: targetWeight, reps: weekScheme, rpe: targetRPE, e1rm: lastBest.e1rm };
+}
+
+function computeAccTarget(history, exId, repMin, repMax, defaultSets) {
+  const past = history.filter(h => h.exId === exId && !h.deload).slice(-5);
+  if (!past.length) return null;
+  const last = past[past.length - 1];
+  const lastBest = bestSet(last.sets);
+  if (!lastBest) return null;
+  const lastAvgRPE = avgRPE(last.sets);
+  const midRep = Math.round((repMin + repMax) / 2);
+  let targetRPE = 8.0;
+  let targetSets = last.sets.length || defaultSets;
+  if (lastAvgRPE && lastAvgRPE <= 6) targetSets = Math.min(8, targetSets + 1);
+  if (lastAvgRPE && lastAvgRPE >= 9) targetRPE = 7.0;
+  const pct = pctFor(midRep, targetRPE);
+  const targetWeight = roundTo2_5(lastBest.e1rm * pct);
+  return { weight: targetWeight, reps: midRep, rpe: targetRPE, sets: targetSets, e1rm: lastBest.e1rm };
+}
+
+function computeDeloadTarget(history, exId) {
+  const past = history.filter(h => h.exId === exId && !h.deload).slice(-5);
+  if (!past.length) return null;
+  const last = past[past.length - 1];
+  const lastBest = bestSet(last.sets);
+  if (!lastBest) return null;
+  const lastSets = last.sets.length || 3;
+  return {
+    weight: roundTo2_5(lastBest.e1rm * 0.50),
+    reps: Math.round((last.sets[0]?.reps || 8)),
+    rpe: 5.5,
+    sets: Math.max(2, Math.floor(lastSets * 0.6)),
+    e1rm: lastBest.e1rm,
+  };
+}
+
+/* ============================ PLATEAU DETECTION ============================ */
+function detectPlateau(history, exId, type) {
+  const minSessions = type === 'main' ? 3 : 4;
+  const past = history.filter(h => h.exId === exId && !h.deload);
+  if (past.length < minSessions) return null;
+  const recent = past.slice(-minSessions);
+  const e1rms = recent.map(h => bestSet(h.sets)?.e1rm).filter(Boolean);
+  if (e1rms.length < minSessions) return null;
+  const oldest = e1rms[0];
+  const newest = e1rms[e1rms.length - 1];
+  const max = Math.max(...e1rms);
+  const min = Math.min(...e1rms);
+  const spread = ((max - min) / max) * 100;
+  const change = ((newest - oldest) / oldest) * 100;
+  if (newest < oldest && spread > 2) return 'decline';
+  if (Math.abs(change) < 2) return 'stall';
+  return null;
+}
+
+const INTERVENTIONS = {
+  main_stall: [
+    'Drop to RPE 7 next session — undertraining beats overtraining at plateau',
+    'Add a 5min foam-roll/mobility primer for the involved joint',
+    'Run a 1-week mini-deload (50% volume, RPE 6) before next push',
+  ],
+  main_decline: [
+    'Take a full deload week now — sleep, food, recover. Volume to 50%',
+    'Re-evaluate sleep and bodyweight trend — stalls follow undereating',
+    'Cap sets to 3 and chase quality reps. No grinders.',
+  ],
+  acc_stall: [
+    'Swap the variation — same muscle, new stimulus',
+    'Add a slow-eccentric (3s down) for 2 weeks',
+    'Increase rep range +2-3 reps and lower the load',
+  ],
+  acc_decline: [
+    'Drop a set across the board — cumulative fatigue too high',
+    'Swap to a machine variant if you\'re using free weights, vice versa',
+    'Reset weight to 80% of prior max for a recovery block',
+  ],
+};
+
+/* ============================ STORAGE ============================ */
+const initData = () => ({
+  history: [],
+  currentWeek: 0,
+  sessions: {},
+  bodyweight: {},
+  swaps: {},
+  runHistory: {
+    w0r1: { complete: true, date: '2026-04-25', actualDuration: 30, actualPace: '5.0', actualHR: 169, maxHR: 179, rpe: 9, notes: 'Aerobic base deconditioned. 5.0 mph = threshold effort.' },
+    w0r2: { complete: true, date: '2026-04-27', actualDuration: 30, actualPace: 'Run 4.3 / Walk 3.5', actualHR: 154, rpe: 6, notes: 'HR dropped 15 bpm vs baseline. Run/walk validated.' },
+  },
+});
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return initData();
+    const parsed = JSON.parse(raw);
+    const init = initData();
+    return {
+      ...init, ...parsed,
+      runHistory: { ...init.runHistory, ...(parsed.runHistory || {}) },
+    };
+  } catch {
+    return initData();
+  }
+}
+
+function saveData(data) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch {}
+}
+
+/* ============================ AUDIO ============================ */
+let audioCtx = null;
+const beep = () => {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const ctx = audioCtx;
+    const now = ctx.currentTime;
+    [0, 0.18, 0.36].forEach(offset => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.frequency.value = 880;
+      osc.type = 'sine';
+      gain.gain.setValueAtTime(0, now + offset);
+      gain.gain.linearRampToValueAtTime(0.25, now + offset + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.14);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(now + offset);
+      osc.stop(now + offset + 0.16);
+    });
+  } catch {}
+};
+
+/* ============================ COMPONENTS ============================ */
+
+function RPEPicker({ value, onPick, onClose }) {
+  return (
+    <div className="modal-bg" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <div className="modal-handle" />
+        <div className="modal-title">Set RPE</div>
+        <div className="modal-sub">Reps in reserve · 6 = easy · 10 = max effort</div>
+        <div className="rpe-pick">
+          {RPE_OPTIONS.map(r => (
+            <button
+              key={r}
+              className={`rpe-btn ${value === r ? 'selected' : ''}`}
+              onClick={() => { onPick(r); onClose(); }}
+            >
+              {r}
+            </button>
+          ))}
+        </div>
+        <div className="modal-actions">
+          <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RestTimer({ duration, onClose }) {
+  const [remaining, setRemaining] = useState(duration);
+  const [done, setDone] = useState(false);
+  const startRef = useRef(Date.now());
+
+  useEffect(() => {
+    if (done) return;
+    const tick = () => {
+      const elapsed = (Date.now() - startRef.current) / 1000;
+      const left = Math.max(0, duration - elapsed);
+      setRemaining(left);
+      if (left <= 0 && !done) {
+        setDone(true);
+        beep();
+      }
+    };
+    const id = setInterval(tick, 100);
+    return () => clearInterval(id);
+  }, [duration, done]);
+
+  const pct = Math.max(0, Math.min(1, remaining / duration));
+  const C = 2 * Math.PI * 110;
+  const offset = C * (1 - pct);
+
+  return (
+    <div className="rest-overlay" onClick={onClose}>
+      <div className="rest-circle-wrap" onClick={e => e.stopPropagation()}>
+        <svg className="rest-svg" viewBox="0 0 240 240">
+          <circle className="rest-track" cx="120" cy="120" r="110" />
+          <circle
+            className={`rest-progress ${done ? 'done' : ''}`}
+            cx="120" cy="120" r="110"
+            strokeDasharray={C} strokeDashoffset={offset}
+          />
+        </svg>
+        <div className="rest-time">
+          <div className="rest-time-num">{Math.ceil(remaining)}</div>
+          <div className="rest-time-label">{done ? 'GO' : 'rest · sec'}</div>
+        </div>
+      </div>
+      <div className="rest-actions">
+        <button className="rest-action" onClick={() => { startRef.current -= 15000; }}>-15s</button>
+        <button className="rest-action" onClick={() => { startRef.current += 15000; }}>+15s</button>
+        <button className="rest-action primary" onClick={onClose}>Done</button>
+      </div>
+    </div>
+  );
+}
+
+function PlateauBanner({ status, type }) {
+  const [open, setOpen] = useState(false);
+  if (!status) return null;
+  const tips = INTERVENTIONS[`${type === 'main' ? 'main' : 'acc'}_${status}`];
+  return (
+    <div className={`plateau ${status} ${open ? 'open' : ''}`}>
+      <div className="plateau-head" onClick={() => setOpen(!open)}>
+        <div className="plateau-tag">
+          {status === 'stall' ? '⚠ PLATEAU · ' : '⚠ DECLINING · '}
+          {open ? 'tap to hide' : 'tap for fixes'}
+        </div>
+        <div className="plateau-arrow">▾</div>
+      </div>
+      {open && (
+        <div className="plateau-body">
+          <ul>
+            {tips.map((t, i) => <li key={i}>{t}</li>)}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SwapModal({ exercise, currentSwap, onSelect, onClear, onClose }) {
+  const slot = exercise.id;
+  const presets = ALTERNATIVES[slot] || [];
+  const [customMode, setCustomMode] = useState(false);
+  const [customName, setCustomName] = useState('');
+  const [customNote, setCustomNote] = useState('');
+  const currentName = currentSwap?.name || exercise.name;
+
+  const submitCustom = () => {
+    const n = customName.trim();
+    if (!n) return;
+    onSelect({ id: 'custom_' + Date.now(), name: n, note: customNote.trim() || exercise.note, isCustom: true });
+    onClose();
+  };
+
+  return (
+    <div className="modal-bg" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <div className="modal-handle" />
+        <div className="modal-title">Swap Exercise</div>
+        <div className="modal-sub">{exercise.name} slot · pick an alternative</div>
+
+        {!customMode ? (
+          <>
+            <div className="swap-list">
+              {presets.map(name => (
+                <button
+                  key={name}
+                  className={`swap-opt ${name === currentName ? 'current' : ''}`}
+                  onClick={() => { onSelect({ id: slot+'_'+name, name, note: '' }); onClose(); }}
+                >
+                  <div className="swap-opt-name">{name}</div>
+                  {name === currentName && <div className="swap-opt-current">CURRENT</div>}
+                </button>
+              ))}
+            </div>
+            <div className="modal-actions">
+              <button className="btn btn-ghost" onClick={() => setCustomMode(true)}>+ Custom</button>
+              {currentSwap && <button className="btn btn-danger" onClick={() => { onClear(); onClose(); }}>Reset</button>}
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="custom-input-row">
+              <input
+                className="custom-input"
+                placeholder="Exercise name"
+                value={customName}
+                onChange={e => setCustomName(e.target.value)}
+                autoFocus
+              />
+              <input
+                className="custom-input"
+                placeholder="Cue / note (optional)"
+                value={customNote}
+                onChange={e => setCustomNote(e.target.value)}
+              />
+            </div>
+            <div className="modal-actions">
+              <button className="btn btn-ghost" onClick={() => setCustomMode(false)}>Back</button>
+              <button className="btn btn-primary" onClick={submitCustom}>Save Custom</button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SetRow({ idx, set, onChange, onToggle, onRPETap, weekDeload }) {
+  return (
+    <div className={`set-row ${set.done ? 'done' : ''} ${!set.done && idx === 0 ? '' : ''}`}>
+      <div className="set-num">{idx + 1}</div>
+      <input
+        className="set-input mono"
+        type="number" inputMode="decimal" placeholder="lb" step="2.5"
+        value={set.weight}
+        onChange={e => onChange({ weight: e.target.value })}
+      />
+      <input
+        className="set-input mono"
+        type="number" inputMode="numeric" placeholder="reps"
+        value={set.reps}
+        onChange={e => onChange({ reps: e.target.value })}
+      />
+      <button
+        className={`rpe-display ${!set.rpe ? 'empty' : ''}`}
+        onClick={onRPETap}
+      >
+        {set.rpe || (weekDeload ? '5–6' : 'RPE')}
+      </button>
+      <button className="set-check" onClick={onToggle} aria-label="Complete set">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
+      </button>
+    </div>
+  );
+}
+
+function ExerciseBlock({ exercise, history, week, weekDeload, sessionEntry, onUpdate, swap, onSwap, onClearSwap, onSetComplete, now }) {
+  const [rpePickerFor, setRpePickerFor] = useState(null);
+  const [swapOpen, setSwapOpen] = useState(false);
+
+  const effective = swap ? { ...exercise, name: swap.name, note: swap.note || exercise.note } : exercise;
+  const exId = exercise.id;
+
+  // build target
+  const target = useMemo(() => {
+    if (weekDeload) return computeDeloadTarget(history, exId);
+    if (exercise.type === 'main') return computeMainTarget(history, exId, getMainScheme(week));
+    return computeAccTarget(history, exId, exercise.repMin, exercise.repMax, exercise.defaultSets);
+  }, [history, exId, week, weekDeload, exercise]);
+
+  const plateauStatus = useMemo(() => {
+    if (weekDeload) return null;
+    return detectPlateau(history, exId, exercise.type);
+  }, [history, exId, weekDeload, exercise.type]);
+
+  const sets = sessionEntry?.sets || [];
+  const ensureSets = (n) => {
+    if (sets.length < n) {
+      const fresh = [...sets];
+      while (fresh.length < n) fresh.push({ weight: '', reps: '', rpe: '', done: false });
+      onUpdate(fresh);
+    }
+  };
+  useEffect(() => {
+    if (!sessionEntry) {
+      const initSets = target?.sets || exercise.defaultSets;
+      const arr = Array.from({ length: initSets }, () => ({ weight: '', reps: '', rpe: '', done: false }));
+      onUpdate(arr);
+    }
+  }, []); // eslint-disable-line
+
+  const updateSet = (i, patch) => {
+    const next = sets.map((s, j) => j === i ? { ...s, ...patch } : s);
+    onUpdate(next);
+  };
+  const toggleSet = (i) => {
+    const wasDone = sets[i].done;
+    const next = sets.map((s, j) => {
+      if (j !== i) return s;
+      const willBeDone = !s.done;
+      return { ...s, done: willBeDone, doneAt: willBeDone ? Date.now() : null };
+    });
+    onUpdate(next);
+    if (!wasDone) onSetComplete(REST_PROTOCOLS[exercise.rest] || REST_PROTOCOLS.acc);
+  };
+  const addSet = () => onUpdate([...sets, { weight: '', reps: '', rpe: '', done: false }]);
+  const removeSet = () => sets.length > 1 && onUpdate(sets.slice(0, -1));
+
+  const repStr = exercise.type === 'main'
+    ? (weekDeload ? `${exercise.repMin}–${exercise.repMax}` : `${getMainScheme(week)}`)
+    : `${exercise.repMin}–${exercise.repMax}`;
+
+  // live timer
+  const doneSets = sets.filter(s => s.done && s.doneAt);
+  const firstDoneAt = doneSets.length ? Math.min(...doneSets.map(s => s.doneAt)) : null;
+  const lastDoneAt  = doneSets.length ? Math.max(...doneSets.map(s => s.doneAt)) : null;
+  const allSetsDone = sets.length > 0 && sets.every(s => s.done);
+  const liveMs = !firstDoneAt ? 0 : (allSetsDone ? (lastDoneAt - firstDoneAt) : ((now || Date.now()) - firstDoneAt));
+
+  // previous session duration + density for this exercise
+  const prevSession = useMemo(() => {
+    return [...history].reverse().find(h => h.exId === exId && !h.deload);
+  }, [history, exId]);
+  const prevDur = prevSession?.duration;
+  const prevVol = prevSession ? prevSession.sets.reduce((a,s) => a + s.weight*s.reps, 0) : 0;
+  const prevDensity = density(prevVol, prevDur);
+
+  return (
+    <div className={`card exercise ${weekDeload ? 'deload-mode' : ''}`}>
+      <div className="ex-head">
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div className="ex-name">{effective.name}</div>
+          <div className="row" style={{ gap: 6, marginTop: 4 }}>
+            <span className={`ex-badge ${exercise.type}`}>{exercise.type.toUpperCase()}</span>
+            {swap && <span className={`ex-badge ${swap.isCustom ? 'custom' : 'swap'}`}>{swap.isCustom ? 'CUSTOM' : 'SWAPPED'}</span>}
+          </div>
+        </div>
+        {firstDoneAt && (
+          <div className={`ex-timer ${allSetsDone ? 'locked' : ''}`}>⏱ {fmtMMSS(liveMs)}</div>
+        )}
+      </div>
+
+      <PlateauBanner status={plateauStatus} type={exercise.type} />
+
+      {target ? (
+        <div className="ex-target">
+          target · <b>{target.weight}lb × {target.reps} × {target.sets || sets.length}</b> @ RPE <b>{target.rpe}</b>
+          <span style={{ color: 'var(--muted)' }}> · e1RM {Math.round(target.e1rm)}lb</span>
+          {prevDur && (
+            <div style={{ marginTop: 4, color: 'var(--muted)' }}>
+              last · <b style={{ color: 'var(--text)' }}>{fmtMMSS(prevDur)}</b>
+              {prevDensity && <> · <b style={{ color: 'var(--accent)' }}>{Math.round(prevDensity)} lb/min</b></>}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="ex-target">target · <b>{repStr} reps</b> · log first session to enable suggestions</div>
+      )}
+
+      {effective.note && <div className="ex-note">{effective.note}</div>}
+
+      <div className="set-list">
+        {sets.map((s, i) => (
+          <SetRow
+            key={i} idx={i} set={s}
+            onChange={p => updateSet(i, p)}
+            onToggle={() => toggleSet(i)}
+            onRPETap={() => setRpePickerFor(i)}
+            weekDeload={weekDeload}
+          />
+        ))}
+      </div>
+
+      <div className="set-controls">
+        <button className="set-add" onClick={addSet}>+ ADD SET</button>
+        {sets.length > 1 && <button className="set-remove" onClick={removeSet}>− REMOVE</button>}
+      </div>
+
+      <div className="ex-foot">
+        <button className="ex-foot-btn" onClick={() => setSwapOpen(true)}>⇄ SWAP</button>
+      </div>
+
+      {rpePickerFor !== null && (
+        <RPEPicker
+          value={safeNum(sets[rpePickerFor]?.rpe)}
+          onPick={r => updateSet(rpePickerFor, { rpe: r })}
+          onClose={() => setRpePickerFor(null)}
+        />
+      )}
+
+      {swapOpen && (
+        <SwapModal
+          exercise={exercise} currentSwap={swap}
+          onSelect={onSwap} onClear={onClearSwap}
+          onClose={() => setSwapOpen(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ============================ VIEWS ============================ */
+
+function CycleIndicator({ week }) {
+  const cw = getCycleWeek(week);
+  const cycle = getCycleNum(week);
+  const labels = [
+    {n:'A1', r:'5s'}, {n:'B1', r:'4s'}, {n:'A2', r:'3s'}, {n:'B2', r:'5s'}, {n:'DELOAD', r:'rpe 5-6'}
+  ];
+  return (
+    <div className="card elevated cycle-indicator">
+      <div className="cycle-meta">
+        <div className="cycle-num">Cycle {String(cycle).padStart(2,'0')} · Week {cw + 1} of 5</div>
+        <div className={`week-pill ${cw === 4 ? 'deload' : ''}`}>{getWeekLabel(week)} · {getWeekRepStr(week)}</div>
+      </div>
+      <div className="cycle-week">{cw === 4 ? 'DELOAD WEEK' : labels[cw].n + ' · MAIN ' + labels[cw].r}</div>
+      <div style={{ height: 14 }} />
+      <div className="cycle-strip">
+        {labels.map((l, i) => (
+          <div key={i} className={`cycle-strip-cell ${i === cw ? 'current' : ''} ${i < cw ? 'done' : ''} ${i === 4 ? 'deload' : ''}`}>
+            <div className="cycle-strip-name">{l.n}</div>
+            <div className="cycle-strip-reps">{l.r}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function DashboardView({ data, onSelectDay, onAdvanceWeek, onResetWeek }) {
+  const week = data.currentWeek;
+  const program = getProgram(week);
+  const completedDays = ['d1','d2','d3','d4','d5'].filter(id => {
+    const sk = sessionKey(week, id);
+    const sess = data.sessions[sk];
+    if (!sess) return false;
+    return sess.exercises && Object.values(sess.exercises).some(ex => ex.sets?.some(s => s.done));
+  });
+
+  const recent = data.history.slice(-6).reverse();
+
+  return (
+    <div>
+      <CycleIndicator week={week} />
+
+      <div className="section-label">This Week's Sessions</div>
+      <div className="day-grid">
+        {['d1','d2','d3','d4','d5'].map(dayId => {
+          const day = program[dayId];
+          const isComplete = completedDays.includes(dayId);
+          return (
+            <button
+              key={dayId}
+              className={`day-card ${isComplete ? 'complete' : ''}`}
+              onClick={() => onSelectDay(dayId)}
+            >
+              <div className="day-card-num">DAY {dayId.slice(1).padStart(2,'0')}</div>
+              <div className="day-card-name">{day.name}</div>
+              <div className="day-card-focus">{day.focus}</div>
+              {isComplete && (
+                <div className="day-card-status">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                </div>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {completedDays.length === 5 && (
+        <div className="section-label" style={{ marginTop: 22 }}>Week Complete</div>
+      )}
+      {completedDays.length === 5 && (
+        <div className="card" style={{ display: 'flex', gap: 8 }}>
+          <button className="btn btn-primary" onClick={onAdvanceWeek}>Advance to Next Week</button>
+        </div>
+      )}
+
+      {recent.length > 0 && (
+        <>
+          <div className="section-label">Recent</div>
+          <div className="recent-list">
+            {recent.map((h, i) => {
+              const exMap = {...PROGRAM_A, ...PROGRAM_B};
+              const dayLabel = h.sessionKey ? h.sessionKey.split('_')[1].toUpperCase() : '';
+              return (
+                <div key={i} className="recent-item">
+                  <div>
+                    <div className="recent-day">{h.exName || h.exId}</div>
+                    <div className="recent-meta">{fmtDate(h.sessionDate)} · {h.deload ? 'DELOAD' : 'WK ' + (h.week % 5 + 1)} · {dayLabel}</div>
+                  </div>
+                  <div className="recent-volume">
+                    {(() => {
+                      const b = bestSet(h.sets);
+                      return b ? `${b.weight}lb × ${b.reps} @ ${b.rpe}` : '—';
+                    })()}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {recent.length === 0 && (
+        <div className="empty">No sessions yet — pick a day above to start.</div>
+      )}
+
+      <div className="section-label" style={{ marginTop: 22 }}>Settings</div>
+      <div className="card" style={{ display: 'flex', gap: 8 }}>
+        <button className="btn btn-ghost" onClick={onResetWeek}>Reset This Week</button>
+        <button className="btn btn-ghost" onClick={onAdvanceWeek}>Skip to Next Week</button>
+      </div>
+    </div>
+  );
+}
+
+function SessionView({ data, dayId, onBack, onSave }) {
+  const week = data.currentWeek;
+  const program = getProgram(week);
+  const day = program[dayId];
+  const sk = sessionKey(week, dayId);
+  const existing = data.sessions[sk] || { exercises: {} };
+  const [exData, setExData] = useState(existing.exercises);
+  const [restTimer, setRestTimer] = useState(null);
+  const [startedAt] = useState(existing.startedAt || Date.now());
+  const [now, setNow] = useState(Date.now());
+  const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState('');
+
+  const weekDeload = isDeloadWeek(week);
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  const elapsed = Math.floor((now - startedAt) / 1000);
+  const elapsedMin = Math.floor(elapsed / 60);
+  const elapsedSec = elapsed % 60;
+  const clockClass = elapsedMin >= 60 ? 'crit' : elapsedMin >= 45 ? 'warn' : '';
+
+  const updateExercise = (exId, sets) => {
+    setExData(prev => ({ ...prev, [exId]: { ...(prev[exId] || {}), sets } }));
+  };
+
+  const swapMap = data.swaps || {};
+  const setSwap = (exId, swap) => {
+    onSave({ swaps: { ...swapMap, [exId]: swap } }, true);
+  };
+  const clearSwap = (exId) => {
+    const next = { ...swapMap };
+    delete next[exId];
+    onSave({ swaps: next }, true);
+  };
+
+  const onSetComplete = (restSec) => {
+    setRestTimer(restSec);
+  };
+
+  const handleSave = () => {
+    setSaving(true);
+    // build history entries
+    const newHistory = [...data.history];
+    const date = todayStr();
+    for (const ex of day.exercises) {
+      const eData = exData[ex.id];
+      if (!eData?.sets) continue;
+      const completedSets = eData.sets.filter(s => s.done && s.weight && s.reps);
+      if (completedSets.length === 0) continue;
+      const swap = swapMap[ex.id];
+      const dur = exerciseDuration(eData.sets);
+      newHistory.push({
+        exId: ex.id,
+        exName: swap?.name || ex.name,
+        sessionDate: date,
+        sessionKey: sk,
+        sets: completedSets.map(s => ({ weight: safeNum(s.weight), reps: safeNum(s.reps), rpe: safeNum(s.rpe) })),
+        week,
+        deload: weekDeload,
+        duration: dur,
+      });
+    }
+    onSave({
+      sessions: { ...data.sessions, [sk]: { exercises: exData, startedAt, savedAt: Date.now() } },
+      history: newHistory,
+    });
+    setToast('Session saved');
+    setTimeout(() => setToast(''), 1500);
+    setTimeout(() => { setSaving(false); onBack(); }, 600);
+  };
+
+  return (
+    <div>
+      <div className="session-header">
+        <button className="session-back" onClick={onBack}>← BACK</button>
+        <div className="session-title">{day.name}</div>
+        <div className="session-focus">{day.focus} · Week {getWeekLabel(week)}</div>
+        <div className={`session-clock ${clockClass}`}>
+          ⏱ {String(elapsedMin).padStart(2,'0')}:{String(elapsedSec).padStart(2,'0')}
+        </div>
+      </div>
+
+      {weekDeload && (
+        <div className="deload-banner">
+          <b>DELOAD WEEK</b> · 60% sets · ~50% e1RM weight · RPE 5–6 only · no grinders
+        </div>
+      )}
+
+      {day.exercises.map(ex => (
+        <ExerciseBlock
+          key={ex.id}
+          exercise={ex}
+          history={data.history}
+          week={week}
+          weekDeload={weekDeload}
+          sessionEntry={exData[ex.id]}
+          onUpdate={(sets) => updateExercise(ex.id, sets)}
+          swap={swapMap[ex.id]}
+          onSwap={(swap) => setSwap(ex.id, swap)}
+          onClearSwap={() => clearSwap(ex.id)}
+          onSetComplete={onSetComplete}
+          now={now}
+        />
+      ))}
+
+      <div className="save-bar">
+        <button className="btn btn-ghost" onClick={onBack}>Cancel</button>
+        <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
+          {saving ? 'Saving…' : 'Save Session'}
+        </button>
+      </div>
+
+      {restTimer !== null && (
+        <RestTimer duration={restTimer} onClose={() => setRestTimer(null)} />
+      )}
+
+      {toast && <div className="toast">{toast}</div>}
+    </div>
+  );
+}
+
+function BodyweightView({ data, onLog }) {
+  const [val, setVal] = useState('');
+  const today = todayStr();
+  const bw = data.bodyweight || {};
+  const entries = Object.entries(bw).sort((a,b) => a[0].localeCompare(b[0]));
+  const latest = entries[entries.length - 1];
+
+  const submit = () => {
+    const n = parseFloat(val);
+    if (!n || n < 60 || n > 600) return;
+    onLog(today, n);
+    setVal('');
+  };
+
+  // weekly averages
+  const weeklyAvgs = useMemo(() => {
+    if (!entries.length) return [];
+    const buckets = {};
+    for (const [d, v] of entries) {
+      const date = new Date(d);
+      const dayOfWeek = date.getDay(); // 0 = Sun
+      const monday = new Date(date);
+      monday.setDate(date.getDate() - ((dayOfWeek + 6) % 7));
+      const key = monday.toISOString().slice(0,10);
+      if (!buckets[key]) buckets[key] = [];
+      buckets[key].push(v);
+    }
+    return Object.entries(buckets).map(([k, vs]) => ({
+      week: k, avg: vs.reduce((a,b)=>a+b,0) / vs.length,
+    })).sort((a,b) => a.week.localeCompare(b.week));
+  }, [entries]);
+
+  const thisWeekAvg = weeklyAvgs[weeklyAvgs.length - 1]?.avg;
+  const lastWeekAvg = weeklyAvgs[weeklyAvgs.length - 2]?.avg;
+  const delta = thisWeekAvg && lastWeekAvg ? thisWeekAvg - lastWeekAvg : null;
+  const allMin = entries.length ? Math.min(...entries.map(e => e[1])) : null;
+  const allMax = entries.length ? Math.max(...entries.map(e => e[1])) : null;
+
+  return (
+    <div>
+      <div className="section-label">Today</div>
+      <div className="card bw-input-card">
+        <div style={{ fontFamily:'DM Mono', fontSize:11, color:'var(--muted)', letterSpacing:'0.12em' }}>
+          {today.toUpperCase()}
+        </div>
+        <div className="bw-input-row">
+          <input
+            className="bw-input-big mono"
+            type="number" inputMode="decimal" placeholder="lb" step="0.1"
+            value={val} onChange={e => setVal(e.target.value)}
+          />
+          <button className="bw-log-btn" onClick={submit}>Log</button>
+        </div>
+        {bw[today] && (
+          <div style={{ fontFamily:'DM Mono', fontSize:11, color:'var(--accent)', marginTop:8 }}>
+            ✓ logged · {bw[today]}lb
+          </div>
+        )}
+      </div>
+
+      {entries.length > 0 && (
+        <>
+          <div className="bw-stat-grid">
+            <div className="bw-stat">
+              <div className="bw-stat-label">Latest</div>
+              <div className="bw-stat-val mono">{latest[1]}</div>
+              <div className="bw-stat-delta flat">{fmtDate(latest[0])}</div>
+            </div>
+            <div className="bw-stat">
+              <div className="bw-stat-label">Wk Avg</div>
+              <div className="bw-stat-val mono">{thisWeekAvg ? thisWeekAvg.toFixed(1) : '—'}</div>
+              {delta !== null && (
+                <div className={`bw-stat-delta ${delta > 0.2 ? 'up' : delta < -0.2 ? 'down' : 'flat'}`}>
+                  {delta > 0 ? '+' : ''}{delta.toFixed(1)}lb
+                </div>
+              )}
+            </div>
+            <div className="bw-stat">
+              <div className="bw-stat-label">Range</div>
+              <div className="bw-stat-val mono">{allMin ? `${allMin.toFixed(0)}–${allMax.toFixed(0)}` : '—'}</div>
+              <div className="bw-stat-delta flat">all-time</div>
+            </div>
+          </div>
+
+          <div className="section-label">Trend</div>
+          <div className="card chart-card">
+            <TrendChart points={entries.map(([d,v]) => ({x:d, y:v}))} />
+          </div>
+
+          <div className="section-label">Recent Logs</div>
+          <div className="recent-list">
+            {entries.slice(-14).reverse().map(([d, v]) => (
+              <div key={d} className="recent-item">
+                <div className="recent-meta">{fmtDate(d)}</div>
+                <div className="recent-volume mono">{v}lb</div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function TrendChart({ points }) {
+  if (!points || points.length < 2) {
+    return <div className="chart-empty">Need at least 2 logs for a trend line</div>;
+  }
+  const w = 600, h = 160, pad = 24;
+  const ys = points.map(p => p.y);
+  const minY = Math.min(...ys), maxY = Math.max(...ys);
+  const yRange = Math.max(1, maxY - minY);
+  const xStep = (w - pad * 2) / Math.max(1, points.length - 1);
+
+  const coords = points.map((p, i) => {
+    const x = pad + i * xStep;
+    const y = h - pad - ((p.y - minY) / yRange) * (h - pad * 2);
+    return [x, y];
+  });
+  const line = coords.map((c, i) => `${i === 0 ? 'M' : 'L'} ${c[0]} ${c[1]}`).join(' ');
+  const area = `${line} L ${coords[coords.length-1][0]} ${h - pad} L ${coords[0][0]} ${h - pad} Z`;
+
+  return (
+    <svg className="chart-svg" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#C8F135" stopOpacity="0.25" />
+          <stop offset="100%" stopColor="#C8F135" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <line className="chart-axis" x1={pad} x2={w-pad} y1={h-pad} y2={h-pad} />
+      <path className="chart-area" d={area} />
+      <path className="chart-line" d={line} />
+      {coords.map((c,i) => <circle key={i} className="chart-dot" cx={c[0]} cy={c[1]} r="2.5" />)}
+      <text className="chart-label" x={pad} y={pad - 6}>{maxY.toFixed(1)}lb</text>
+      <text className="chart-label" x={pad} y={h - pad + 14}>{minY.toFixed(1)}lb</text>
+      <text className="chart-label" x={w-pad-40} y={h - pad + 14}>{fmtDate(points[points.length-1].x)}</text>
+    </svg>
+  );
+}
+
+function ProgressView({ data }) {
+  // dedupe exercises by id (combine A & B)
+  const allExercises = useMemo(() => {
+    const map = new Map();
+    for (const prog of [PROGRAM_A, PROGRAM_B]) {
+      for (const day of Object.values(prog)) {
+        for (const ex of day.exercises) {
+          if (!map.has(ex.id)) map.set(ex.id, ex);
+        }
+      }
+    }
+    return [...map.values()];
+  }, []);
+
+  const exWithHistory = allExercises.filter(ex => data.history.some(h => h.exId === ex.id));
+  const [pickId, setPickId] = useState(exWithHistory[0]?.id || allExercises[0].id);
+
+  const ex = allExercises.find(e => e.id === pickId);
+  const hist = data.history.filter(h => h.exId === pickId && !h.deload);
+  const e1rmPoints = hist.map(h => ({
+    x: h.sessionDate,
+    y: bestSet(h.sets)?.e1rm || 0,
+  })).filter(p => p.y > 0);
+
+  const volumePoints = hist.map(h => ({
+    x: h.sessionDate,
+    y: h.sets.reduce((a,s) => a + s.weight * s.reps, 0),
+  }));
+
+  const densityPoints = hist
+    .map(h => {
+      const vol = h.sets.reduce((a,s) => a + s.weight * s.reps, 0);
+      const d = density(vol, h.duration);
+      return d ? { x: h.sessionDate, y: d } : null;
+    })
+    .filter(Boolean);
+
+  return (
+    <div>
+      <div className="section-label">Exercise</div>
+      <div className="ex-pick-row">
+        {(exWithHistory.length ? exWithHistory : allExercises).map(e => (
+          <button
+            key={e.id}
+            className={`ex-pick ${e.id === pickId ? 'active' : ''}`}
+            onClick={() => setPickId(e.id)}
+          >
+            {e.name}
+          </button>
+        ))}
+      </div>
+
+      {hist.length === 0 ? (
+        <div className="empty">No data yet for {ex.name}. Complete a session to see progress.</div>
+      ) : (
+        <>
+          <div className="section-label">e1RM Trend</div>
+          <div className="card chart-card">
+            <TrendChart points={e1rmPoints} />
+          </div>
+
+          <div className="section-label">Volume Per Session</div>
+          <div className="card chart-card">
+            <TrendChart points={volumePoints} />
+          </div>
+
+          {densityPoints.length >= 2 && (
+            <>
+              <div className="section-label">Density (lb/min) — Volume per Time</div>
+              <div className="card chart-card">
+                <TrendChart points={densityPoints} />
+              </div>
+            </>
+          )}
+
+          <div className="section-label">Session Log</div>
+          <div className="session-log">
+            {hist.slice().reverse().map((h, i) => {
+              const b = bestSet(h.sets);
+              const vol = h.sets.reduce((a,s) => a + s.weight * s.reps, 0);
+              const d = density(vol, h.duration);
+              return (
+                <div key={i} className="log-row">
+                  <div>
+                    <div className="log-date">{fmtDate(h.sessionDate)} · {h.exName}</div>
+                    {h.duration && (
+                      <div style={{ fontFamily: 'DM Mono', fontSize: 10, color: 'var(--muted)', marginTop: 2 }}>
+                        {fmtMMSS(h.duration)}{d ? ` · ${Math.round(d)} lb/min` : ''}
+                      </div>
+                    )}
+                  </div>
+                  <div className="log-best">{b ? `${b.weight}×${b.reps} @${b.rpe}` : '—'}</div>
+                  <div className="log-e1rm">{b ? Math.round(b.e1rm) : '—'}</div>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ============================ RUN COMPONENTS ============================ */
+function RunCard({ run, status, onTap }) {
+  const ts = TYPE_STYLES[run.type] || TYPE_STYLES.easy;
+  const statusLabels = { done:'DONE', today:'TODAY', upcoming:'UP NEXT', missed:'MISSED' };
+  return (
+    <button className={`run-card ${status} ${run.type === 'race' ? 'race' : ''}`} onClick={onTap}>
+      <div className="run-card-head">
+        <div>
+          <div className="run-card-day">{run.day} · {fmtDate(run.date)} · WK {run.week}</div>
+          <div className="run-card-title">{run.name}</div>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end' }}>
+          <span className={`run-status-badge ${status}`}>{statusLabels[status]}</span>
+          <span className="run-type-badge" style={{ color: ts.color }}>{ts.label}</span>
+        </div>
+      </div>
+      <div className="run-card-row">
+        <span><b>{run.duration}min</b></span>
+        <span>·</span>
+        <span><b>{run.pace}</b></span>
+        <span>·</span>
+        <span>{run.hr}</span>
+      </div>
+    </button>
+  );
+}
+
+function RunDetailModal({ run, log, onSave, onClose }) {
+  const [draft, setDraft] = useState({
+    actualDuration: log?.actualDuration || run.duration,
+    actualPace:    log?.actualPace || '',
+    actualHR:      log?.actualHR || '',
+    maxHR:         log?.maxHR || '',
+    distance:      log?.distance || '',
+    rpe:           log?.rpe || '',
+    notes:         log?.notes || '',
+  });
+  const [logging, setLogging] = useState(!!log);
+
+  const ts = TYPE_STYLES[run.type] || TYPE_STYLES.easy;
+
+  const save = () => {
+    onSave(run.id, {
+      complete: true,
+      date: run.date,
+      actualDuration: safeNum(draft.actualDuration) || run.duration,
+      actualPace: draft.actualPace,
+      actualHR: safeNum(draft.actualHR) || null,
+      maxHR: safeNum(draft.maxHR) || null,
+      distance: safeNum(draft.distance) || null,
+      rpe: safeNum(draft.rpe) || null,
+      notes: draft.notes,
+    });
+    onClose();
+  };
+
+  const unmark = () => {
+    onSave(run.id, null);
+    onClose();
+  };
+
+  return (
+    <div className="modal-bg" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <div className="modal-handle" />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+          <span className="run-type-badge" style={{ color: ts.color }}>{ts.label}</span>
+          <span className="modal-sub" style={{ margin: 0 }}>WK {run.week} · {run.day} · {fmtDate(run.date)}</span>
+        </div>
+        <div className="modal-title">{run.name}</div>
+
+        <div className="run-detail-section">
+          <div className="run-detail-label">Duration · Pace · HR</div>
+          <div className="run-detail-val mono">{run.duration} min · {run.pace} · {run.hr}</div>
+        </div>
+
+        <div className="run-detail-section">
+          <div className="run-detail-label">Structure</div>
+          <div className="run-detail-structure">{run.structure}</div>
+        </div>
+
+        {run.notes && (
+          <div className="run-detail-section">
+            <div className="run-detail-label">Coaching Note</div>
+            <div className="run-detail-val">{run.notes}</div>
+          </div>
+        )}
+
+        {!logging ? (
+          <div className="modal-actions">
+            <button className="btn btn-ghost" onClick={onClose}>Close</button>
+            <button className="btn btn-primary" onClick={() => setLogging(true)}>Log Run</button>
+          </div>
+        ) : (
+          <>
+            <div className="run-detail-label" style={{ marginTop: 8 }}>Log Actuals</div>
+            <div className="run-log-grid">
+              <div className="run-log-field">
+                <div className="run-log-field-label">Duration (min)</div>
+                <input className="run-log-input" type="number" inputMode="decimal"
+                  value={draft.actualDuration} onChange={e => setDraft({...draft, actualDuration: e.target.value})} />
+              </div>
+              <div className="run-log-field">
+                <div className="run-log-field-label">Distance (mi)</div>
+                <input className="run-log-input" type="number" inputMode="decimal" placeholder="—"
+                  value={draft.distance} onChange={e => setDraft({...draft, distance: e.target.value})} />
+              </div>
+              <div className="run-log-field full">
+                <div className="run-log-field-label">Actual Pace</div>
+                <input className="run-log-input" type="text" placeholder="e.g. 5.0 mph or Run 4.5/Walk 3.5"
+                  value={draft.actualPace} onChange={e => setDraft({...draft, actualPace: e.target.value})} />
+              </div>
+              <div className="run-log-field">
+                <div className="run-log-field-label">Avg HR (bpm)</div>
+                <input className="run-log-input" type="number" inputMode="numeric" placeholder="—"
+                  value={draft.actualHR} onChange={e => setDraft({...draft, actualHR: e.target.value})} />
+              </div>
+              <div className="run-log-field">
+                <div className="run-log-field-label">Max HR (bpm)</div>
+                <input className="run-log-input" type="number" inputMode="numeric" placeholder="—"
+                  value={draft.maxHR} onChange={e => setDraft({...draft, maxHR: e.target.value})} />
+              </div>
+              <div className="run-log-field full">
+                <div className="run-log-field-label">RPE 1-10 · Notes</div>
+                <input className="run-log-input" type="number" inputMode="decimal" placeholder="RPE"
+                  value={draft.rpe} onChange={e => setDraft({...draft, rpe: e.target.value})} style={{ marginBottom: 8 }} />
+                <textarea className="run-log-text" placeholder="How did it feel? Conditions? Pain points?"
+                  value={draft.notes} onChange={e => setDraft({...draft, notes: e.target.value})} />
+              </div>
+            </div>
+            <div className="modal-actions">
+              {log ? <button className="btn btn-danger" onClick={unmark}>Unmark</button>
+                   : <button className="btn btn-ghost" onClick={() => setLogging(false)}>Back</button>}
+              <button className="btn btn-primary" onClick={save}>Save</button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function WeekRow({ weekObj, runHistory, onTapRun }) {
+  const [open, setOpen] = useState(false);
+  const today = todayStr();
+  const isCurrent = weekObj.runs.some(r => daysBetween(today, r.date) >= -3 && daysBetween(today, r.date) <= 7);
+  const completed = weekObj.runs.filter(r => runHistory[r.id]?.complete).length;
+  const total = weekObj.runs.length;
+
+  return (
+    <div>
+      <div className={`week-row ${open ? 'open' : ''}`} onClick={() => setOpen(!open)} role="button">
+        <div>
+          <div className="week-row-title">Week {weekObj.week} · {weekObj.phase}</div>
+          <div className="week-row-meta">{completed}/{total} done · {fmtDate(weekObj.runs[0].date)} – {fmtDate(weekObj.runs[weekObj.runs.length-1].date)}</div>
+        </div>
+        <div className="week-row-arrow">▾</div>
+      </div>
+      {open && (
+        <div className="week-runs">
+          <div className="run-cards">
+            {weekObj.runs.map(r => (
+              <RunCard key={r.id} run={{ ...r, week: weekObj.week, phase: weekObj.phase }}
+                status={runStatus(r, runHistory)}
+                onTap={() => onTapRun({ ...r, week: weekObj.week, phase: weekObj.phase })} />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RunPlanView({ data, onSaveLog }) {
+  const today = todayStr();
+  const runHistory = data.runHistory || {};
+  const [activeRun, setActiveRun] = useState(null);
+
+  const todayRun = useMemo(() => allRuns().find(r => r.date === today), [today]);
+  const nextRun = useMemo(() => {
+    if (todayRun) return null;
+    return allRuns().find(r => daysBetween(today, r.date) > 0);
+  }, [today, todayRun]);
+
+  const currentWeek = findCurrentRunWeek();
+  const currentWeekObj = RUN_PLAN.weeks.find(w => w.week === currentWeek);
+
+  const daysUntilRace = daysBetween(today, RUN_PLAN.raceDate);
+  const raceLabel = daysUntilRace > 1 ? `${daysUntilRace} DAYS` :
+                    daysUntilRace === 1 ? 'TOMORROW' :
+                    daysUntilRace === 0 ? 'TODAY' :
+                    `${Math.abs(daysUntilRace)} DAYS AGO`;
+  const raceClass = daysUntilRace === 0 ? 'race-today' : daysUntilRace < 0 ? 'race-past' : '';
+
+  return (
+    <div>
+      <div className="card race-card elevated">
+        <div className="race-meta">UNTIL RACE DAY</div>
+        <div className={`race-count ${raceClass}`}>{raceLabel}</div>
+        <div className="race-sub">{RUN_PLAN.goal} · Sat {fmtDate(RUN_PLAN.raceDate)}/26</div>
+        <div className="race-goal">GOAL · {RUN_PLAN.goalPace}</div>
+      </div>
+
+      {todayRun && (
+        <>
+          <div className="section-label">Today</div>
+          <div className="run-cards">
+            <RunCard run={todayRun} status={runStatus(todayRun, runHistory)}
+              onTap={() => setActiveRun(todayRun)} />
+          </div>
+        </>
+      )}
+
+      {!todayRun && nextRun && (
+        <>
+          <div className="section-label">Next Run</div>
+          <div className="run-cards">
+            <RunCard run={nextRun} status={runStatus(nextRun, runHistory)}
+              onTap={() => setActiveRun(nextRun)} />
+          </div>
+        </>
+      )}
+
+      {currentWeekObj && (
+        <>
+          <div className="section-label">Week {currentWeekObj.week} · {currentWeekObj.phase}</div>
+          <div className="run-cards">
+            {currentWeekObj.runs.map(r => (
+              <RunCard key={r.id} run={{ ...r, week: currentWeekObj.week, phase: currentWeekObj.phase }}
+                status={runStatus(r, runHistory)}
+                onTap={() => setActiveRun({ ...r, week: currentWeekObj.week, phase: currentWeekObj.phase })} />
+            ))}
+          </div>
+        </>
+      )}
+
+      <div className="section-label">All Weeks</div>
+      <div>
+        {RUN_PLAN.weeks.map(w => (
+          <WeekRow key={w.week} weekObj={w} runHistory={runHistory}
+            onTapRun={(r) => setActiveRun(r)} />
+        ))}
+      </div>
+
+      <div className="section-label">Pace Reference (Treadmill)</div>
+      <div className="ref-table">
+        {PACE_REFERENCE.map(p => (
+          <div key={p.tier} className="ref-row">
+            <div className="ref-tier">{p.tier}</div>
+            <div className="ref-val">{p.mph} mph</div>
+            <div className="ref-desc">{p.desc}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="section-label">Heart Rate Zones</div>
+      <div className="ref-table">
+        {HR_ZONES.map(z => (
+          <div key={z.zone} className="ref-row">
+            <div className="ref-tier">{z.zone} · {z.name}</div>
+            <div className="ref-val">{z.range}</div>
+            <div className="ref-desc">{z.desc}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="section-label">Principles</div>
+      <div className="principle-list">
+        {RUN_PRINCIPLES.map((p, i) => (
+          <div key={i} className="principle-item">{p}</div>
+        ))}
+      </div>
+
+      {activeRun && (
+        <RunDetailModal
+          run={activeRun}
+          log={runHistory[activeRun.id]}
+          onSave={(id, log) => onSaveLog(id, log)}
+          onClose={() => setActiveRun(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ============================ APP ============================ */
+function TabBar({ tab, onPick }) {
+  const tabs = [
+    { id: 'train', label: 'Train', icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M2 12h2m16 0h2M6 8v8M18 8v8M9 6v12M15 6v12" />
+      </svg>
+    )},
+    { id: 'run', label: 'Run', icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="13" cy="4" r="2" />
+        <path d="M4 22l3-7 4-2-2-5 5-1 4 4 4-1" />
+        <path d="M9 13l-2 4M15 11l3 3" />
+      </svg>
+    )},
+    { id: 'body', label: 'Body', icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="6" r="3" />
+        <path d="M12 9v6M9 12h6M8 21l4-6 4 6" />
+      </svg>
+    )},
+    { id: 'progress', label: 'Progress', icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 17l5-6 4 4 7-9" />
+        <path d="M21 6h-4M21 6v4" />
+      </svg>
+    )},
+  ];
+  return (
+    <nav className="tab-bar">
+      {tabs.map(t => (
+        <button key={t.id} className={`tab ${tab === t.id ? 'active' : ''}`} onClick={() => onPick(t.id)}>
+          <div className="tab-icon">{t.icon}</div>
+          <div className="tab-label">{t.label}</div>
+        </button>
+      ))}
+    </nav>
+  );
+}
+
+function App() {
+  const [data, setData] = useState(loadData);
+  const [tab, setTab] = useState('train');
+  const [activeDay, setActiveDay] = useState(null);
+
+  useEffect(() => { saveData(data); }, [data]);
+
+  const update = (patch, silent) => {
+    setData(prev => ({ ...prev, ...patch }));
+  };
+
+  const advanceWeek = () => {
+    if (confirm('Advance to next week? Current sessions will remain in history.')) {
+      update({ currentWeek: data.currentWeek + 1 });
+    }
+  };
+  const resetWeek = () => {
+    if (confirm('Reset this week? In-progress (unsaved) data will be cleared, history is kept.')) {
+      const ns = { ...data.sessions };
+      ['d1','d2','d3','d4','d5'].forEach(d => delete ns[sessionKey(data.currentWeek, d)]);
+      update({ sessions: ns });
+    }
+  };
+
+  const logBodyweight = (date, val) => {
+    update({ bodyweight: { ...data.bodyweight, [date]: val } });
+  };
+
+  const saveRunLog = (runId, log) => {
+    const next = { ...(data.runHistory || {}) };
+    if (log === null) delete next[runId];
+    else next[runId] = log;
+    update({ runHistory: next });
+  };
+
+  let view;
+  if (tab === 'train') {
+    if (activeDay) {
+      view = (
+        <SessionView
+          data={data}
+          dayId={activeDay}
+          onBack={() => setActiveDay(null)}
+          onSave={(patch, silent) => update(patch, silent)}
+        />
+      );
+    } else {
+      view = (
+        <DashboardView
+          data={data}
+          onSelectDay={setActiveDay}
+          onAdvanceWeek={advanceWeek}
+          onResetWeek={resetWeek}
+        />
+      );
+    }
+  } else if (tab === 'run') {
+    view = <RunPlanView data={data} onSaveLog={saveRunLog} />;
+  } else if (tab === 'body') {
+    view = <BodyweightView data={data} onLog={logBodyweight} />;
+  } else {
+    view = <ProgressView data={data} />;
+  }
+
+  const week = data.currentWeek;
+
+  return (
+    <div className="app">
+      <header className="app-header">
+        <div className="brand">
+          <div className="brand-logo">DENSITY</div>
+          <div className="brand-tag">TRAINING TRACKER</div>
+        </div>
+        <div className={`week-pill ${isDeloadWeek(week) ? 'deload' : ''}`}>
+          {getWeekLabel(week)} · CYC {String(getCycleNum(week)).padStart(2,'0')}
+        </div>
+      </header>
+      <main>{view}</main>
+      {!activeDay && <TabBar tab={tab} onPick={setTab} />}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
