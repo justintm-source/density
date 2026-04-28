@@ -824,6 +824,122 @@
     font-size: 12px; color: var(--blue); margin-bottom: 14px;
   }
   .deload-banner b { font-family: 'Bebas Neue'; font-size: 15px; letter-spacing: 0.05em; }
+
+  /* ============================ AUTH ============================ */
+  .login-screen {
+    min-height: 100dvh;
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px; padding-top: calc(24px + var(--safe-top));
+    padding-bottom: calc(24px + var(--safe-bottom));
+  }
+  .login-box {
+    width: 100%; max-width: 380px;
+    background: var(--card);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 22px;
+    padding: 32px 24px;
+    box-shadow: 0 30px 80px -20px rgba(0,0,0,0.5), 0 8px 24px -8px rgba(200,241,53,0.04);
+  }
+  .login-brand {
+    font-family: 'Bebas Neue';
+    font-size: 56px; line-height: 1;
+    letter-spacing: -0.01em;
+    color: var(--accent);
+    text-align: center;
+  }
+  .login-tag {
+    font-family: 'DM Mono';
+    font-size: 10px; letter-spacing: 0.3em;
+    color: var(--muted);
+    text-align: center;
+    margin-top: 4px; margin-bottom: 32px;
+  }
+  .login-blurb {
+    font-size: 13px; color: var(--muted);
+    text-align: center; line-height: 1.6;
+    margin-bottom: 24px;
+  }
+  .login-input {
+    width: 100%;
+    background: var(--card2);
+    border: 1px solid var(--dark);
+    border-radius: 12px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    padding: 16px;
+    margin-bottom: 12px;
+    outline: none;
+    transition: border-color 0.18s var(--ease);
+  }
+  .login-input:focus {
+    border-color: var(--accent);
+  }
+  .login-btn {
+    width: 100%;
+    background: var(--accent);
+    color: #0A0A08;
+    border: none;
+    border-radius: 12px;
+    font-family: 'Bebas Neue';
+    font-size: 18px; letter-spacing: 0.08em;
+    padding: 16px;
+    cursor: pointer;
+    transition: transform 0.18s var(--spring), opacity 0.18s var(--ease);
+  }
+  .login-btn:active { transform: scale(0.98); }
+  .login-btn:disabled { opacity: 0.5; cursor: default; }
+  .login-sent {
+    text-align: center;
+    padding: 12px 0;
+  }
+  .login-sent-title {
+    font-family: 'Bebas Neue';
+    font-size: 22px; letter-spacing: 0.05em;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+  .login-sent-sub {
+    font-size: 13px; color: var(--muted);
+    line-height: 1.6;
+  }
+  .login-err {
+    font-size: 12px; color: var(--red);
+    margin-top: 8px; text-align: center;
+  }
+  .signout-btn {
+    background: transparent;
+    border: 1px solid var(--dark);
+    color: var(--muted);
+    font-family: 'DM Mono';
+    font-size: 10px; letter-spacing: 0.2em;
+    padding: 6px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-left: 8px;
+    transition: color 0.18s var(--ease), border-color 0.18s var(--ease);
+  }
+  .signout-btn:active { color: var(--text); border-color: var(--accent); }
+  .sync-dot {
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    margin-left: 8px;
+    transition: background 0.3s var(--ease), opacity 0.3s var(--ease);
+  }
+  .sync-dot.syncing { background: var(--yellow); animation: pulse 1.2s ease-in-out infinite; }
+  .sync-dot.offline { background: var(--red); }
+  @keyframes pulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 1; }
+  }
+  .auth-loading {
+    min-height: 100dvh;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--muted);
+    font-family: 'DM Mono'; font-size: 11px; letter-spacing: 0.2em;
+  }
 </style>
 </head>
 <body>
@@ -832,6 +948,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js" crossorigin></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js" crossorigin></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js" crossorigin></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
 <script type="text/babel" data-type="module">
 const { useState, useEffect, useRef, useMemo, useCallback } = React;
@@ -1460,6 +1577,48 @@ function loadData() {
 
 function saveData(data) {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch {}
+}
+
+/* ============================ CLOUD SYNC ============================ */
+const SUPABASE_URL = 'https://acfahihnpvcuadyzvzfn.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFjZmFoaWhucHZjdWFkeXp2emZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMzA0OTMsImV4cCI6MjA5MjkwNjQ5M30.6X3wJo3yjijYkxQTrK7Vpb_mV24NkaJq2g_Qq5vSebo';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+async function pullCloud(userId) {
+  try {
+    const { data, error } = await sb
+      .from('density_data')
+      .select('data, updated_at')
+      .eq('user_id', userId)
+      .maybeSingle();
+    if (error) { console.warn('pullCloud error', error); return null; }
+    return data;
+  } catch (e) {
+    console.warn('pullCloud exception', e);
+    return null;
+  }
+}
+
+async function pushCloud(userId, data) {
+  try {
+    const { error } = await sb
+      .from('density_data')
+      .upsert({ user_id: userId, data, updated_at: new Date().toISOString() });
+    if (error) { console.warn('pushCloud error', error); return false; }
+    return true;
+  } catch (e) {
+    console.warn('pushCloud exception', e);
+    return false;
+  }
+}
+
+function mergeCloudData(cloudData) {
+  const init = initData();
+  return {
+    ...init,
+    ...cloudData,
+    runHistory: { ...init.runHistory, ...(cloudData.runHistory || {}) },
+  };
 }
 
 /* ============================ AUDIO ============================ */
@@ -2642,16 +2801,126 @@ function TabBar({ tab, onPick }) {
   );
 }
 
+function LoginView() {
+  const [email, setEmail] = useState('');
+  const [sent, setSent] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+
+  const send = async () => {
+    const e = email.trim();
+    if (!e) return;
+    setBusy(true); setErr('');
+    const { error } = await sb.auth.signInWithOtp({
+      email: e,
+      options: { emailRedirectTo: window.location.origin + window.location.pathname },
+    });
+    setBusy(false);
+    if (error) setErr(error.message);
+    else setSent(true);
+  };
+
+  return (
+    <div className="login-screen">
+      <div className="login-box">
+        <div className="login-brand">DENSITY</div>
+        <div className="login-tag">TRAINING TRACKER</div>
+        {!sent ? (
+          <>
+            <div className="login-blurb">Sign in to sync your training across devices.</div>
+            <input
+              type="email"
+              inputMode="email"
+              autoCapitalize="off"
+              autoCorrect="off"
+              placeholder="your@email.com"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') send(); }}
+              className="login-input"
+            />
+            <button className="login-btn" onClick={send} disabled={busy || !email.trim()}>
+              {busy ? 'SENDING...' : 'SEND MAGIC LINK'}
+            </button>
+            {err && <div className="login-err">{err}</div>}
+          </>
+        ) : (
+          <div className="login-sent">
+            <div className="login-sent-title">CHECK YOUR EMAIL</div>
+            <div className="login-sent-sub">Magic link sent to<br/>{email}</div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function App() {
+  const [session, setSession] = useState(null);
+  const [authReady, setAuthReady] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
+  const [syncState, setSyncState] = useState('idle');
   const [data, setData] = useState(loadData);
   const [tab, setTab] = useState('train');
   const [activeDay, setActiveDay] = useState(null);
+  const debounceRef = useRef(null);
 
-  useEffect(() => { saveData(data); }, [data]);
+  useEffect(() => {
+    sb.auth.getSession().then(({ data }) => {
+      setSession(data.session || null);
+      setAuthReady(true);
+    });
+    const { data: sub } = sb.auth.onAuthStateChange((_evt, s) => {
+      setSession(s || null);
+      if (!s) setHydrated(false);
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (!session) return;
+    let cancelled = false;
+    setSyncState('syncing');
+    pullCloud(session.user.id).then(async row => {
+      if (cancelled) return;
+      if (row && row.data) {
+        setData(mergeCloudData(row.data));
+      } else {
+        await pushCloud(session.user.id, data);
+      }
+      setHydrated(true);
+      setSyncState('idle');
+    });
+    return () => { cancelled = true; };
+  }, [session]);
+
+  useEffect(() => {
+    saveData(data);
+    if (!session || !hydrated) return;
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    setSyncState('syncing');
+    debounceRef.current = setTimeout(async () => {
+      const ok = await pushCloud(session.user.id, data);
+      setSyncState(ok ? 'idle' : 'offline');
+    }, 1500);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [data, session, hydrated]);
 
   const update = (patch, silent) => {
     setData(prev => ({ ...prev, ...patch }));
   };
+
+  const signOut = async () => {
+    if (!confirm('Sign out? Your data is safely synced.')) return;
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+      await pushCloud(session.user.id, data);
+    }
+    await sb.auth.signOut();
+  };
+
+  if (!authReady) return <div className="auth-loading">LOADING</div>;
+  if (!session) return <LoginView />;
 
   const advanceWeek = () => {
     if (confirm('Advance to next week? Current sessions will remain in history.')) {
@@ -2715,8 +2984,12 @@ function App() {
           <div className="brand-logo">DENSITY</div>
           <div className="brand-tag">TRAINING TRACKER</div>
         </div>
-        <div className={`week-pill ${isDeloadWeek(week) ? 'deload' : ''}`}>
-          {getWeekLabel(week)} · CYC {String(getCycleNum(week)).padStart(2,'0')}
+        <div style={{display:'flex', alignItems:'center'}}>
+          <div className={`week-pill ${isDeloadWeek(week) ? 'deload' : ''}`}>
+            {getWeekLabel(week)} · CYC {String(getCycleNum(week)).padStart(2,'0')}
+          </div>
+          <span className={`sync-dot ${syncState}`} title={syncState === 'syncing' ? 'Syncing' : syncState === 'offline' ? 'Offline' : 'Synced'}></span>
+          <button className="signout-btn" onClick={signOut}>OUT</button>
         </div>
       </header>
       <main>{view}</main>
