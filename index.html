@@ -192,6 +192,44 @@
   .cycle-strip-name { font-size: 12px; font-weight: 600; line-height: 1; }
   .cycle-strip-reps { font-size: 9px; opacity: 0.75; margin-top: 3px; }
 
+  /* week nav */
+  .week-nav {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 12px;
+  }
+  .week-nav-btn {
+    width: 38px; height: 38px;
+    border-radius: 999px;
+    background: var(--card2);
+    border: 1px solid var(--dark);
+    color: var(--text);
+    font-size: 16px;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: transform 0.4s var(--spring), border-color 0.2s var(--ease), opacity 0.2s var(--ease);
+  }
+  .week-nav-btn:hover:not(:disabled) { border-color: var(--muted); }
+  .week-nav-btn:active:not(:disabled) { transform: scale(0.92); }
+  .week-nav-btn:disabled { opacity: 0.3; cursor: default; }
+  .week-nav-meta {
+    flex: 1; text-align: center;
+    font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.18em;
+    color: var(--muted); text-transform: uppercase;
+  }
+  .week-nav-back {
+    margin: 10px 0 4px 0;
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: 12px;
+    background: rgba(200,241,53,0.06);
+    border: 1px solid rgba(200,241,53,0.3);
+    color: var(--accent);
+    font-family: 'DM Mono', monospace; font-size: 10px;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    transition: background 0.2s var(--ease), transform 0.4s var(--spring);
+  }
+  .week-nav-back:hover { background: rgba(200,241,53,0.12); }
+  .week-nav-back:active { transform: scale(0.98); }
+
   /* day grid */
   .section-label {
     font-family: 'DM Mono', monospace; font-size: 11px;
@@ -462,6 +500,68 @@
   .rest-action:active { transform: scale(0.95); }
   .rest-action.primary { background: var(--accent); color: var(--bg); border-color: var(--accent); }
 
+  .rest-minimize {
+    position: absolute;
+    top: calc(var(--safe-top) + 16px);
+    right: 16px;
+    font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.18em;
+    text-transform: uppercase;
+    padding: 8px 12px; border-radius: 999px;
+    background: var(--card2); border: 1px solid var(--dark);
+    color: var(--muted);
+    transition: transform 0.4s var(--spring), color 0.2s var(--ease);
+  }
+  .rest-minimize:active { transform: scale(0.95); }
+  .rest-minimize:hover { color: var(--text); }
+
+  .rest-mini {
+    position: fixed;
+    bottom: calc(var(--safe-bottom) + 86px);
+    left: 50%; transform: translateX(-50%);
+    z-index: 60;
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 10px 8px 10px 16px;
+    border-radius: 999px;
+    background: var(--card);
+    border: 1px solid var(--accent);
+    box-shadow: 0 12px 32px -10px rgba(200,241,53,0.3), 0 6px 16px -6px rgba(0,0,0,0.7);
+    color: var(--text);
+    cursor: pointer;
+    animation: miniIn 0.32s var(--spring);
+    transition: transform 0.4s var(--spring), box-shadow 0.3s var(--ease);
+  }
+  @keyframes miniIn {
+    from { opacity: 0; transform: translate(-50%, 12px); }
+    to   { opacity: 1; transform: translate(-50%, 0); }
+  }
+  .rest-mini:active { transform: translateX(-50%) scale(0.96); }
+  .rest-mini.done {
+    border-color: var(--green);
+    background: var(--green);
+    color: var(--bg);
+    animation: miniIn 0.32s var(--spring), miniPulse 0.9s var(--ease) 0.32s infinite alternate;
+  }
+  @keyframes miniPulse {
+    from { box-shadow: 0 12px 32px -10px rgba(168,196,42,0.4), 0 6px 16px -6px rgba(0,0,0,0.7); }
+    to   { box-shadow: 0 12px 40px -8px  rgba(168,196,42,0.75), 0 8px 20px -6px rgba(0,0,0,0.7); }
+  }
+  .rest-mini-icon { font-size: 14px; }
+  .rest-mini-num {
+    font-family: 'Bebas Neue', sans-serif; font-size: 22px; line-height: 1;
+    letter-spacing: 0.02em;
+  }
+  .rest-mini-close {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 26px; height: 26px; border-radius: 999px;
+    background: rgba(255,255,255,0.08);
+    color: inherit;
+    font-size: 16px; line-height: 1;
+    transition: background 0.2s var(--ease);
+  }
+  .rest-mini-close:hover { background: rgba(255,255,255,0.18); }
+  .rest-mini.done .rest-mini-close { background: rgba(0,0,0,0.18); }
+  .rest-mini.done .rest-mini-close:hover { background: rgba(0,0,0,0.28); }
+
   /* plateau banner */
   .plateau {
     margin: 0 0 10px 0;
@@ -552,6 +652,31 @@
   }
   .custom-input:focus { border-color: var(--accent); }
   .modal-actions { display: flex; gap: 8px; margin-top: 14px; }
+
+  .swap-tabs {
+    display: flex; gap: 4px; margin-bottom: 14px;
+    background: var(--card2);
+    border: 1px solid var(--dark);
+    border-radius: 12px; padding: 4px;
+  }
+  .swap-tab {
+    flex: 1; padding: 10px 6px;
+    font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 500;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--muted);
+    transition: background 0.2s var(--ease), color 0.2s var(--ease);
+  }
+  .swap-tab.active { background: var(--card); color: var(--text); }
+  .swap-tab:hover:not(.active) { color: var(--text); }
+
+  .library-list { display: flex; flex-direction: column; gap: 14px; margin-bottom: 14px; }
+  .library-cat-name {
+    font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.18em;
+    color: var(--accent); text-transform: uppercase; margin-bottom: 6px;
+  }
+  .library-cat-items { display: flex; flex-direction: column; gap: 6px; }
   .btn {
     flex: 1; padding: 14px; border-radius: 14px;
     font-family: 'DM Mono', monospace; font-size: 11px;
@@ -1145,6 +1270,89 @@ const ALTERNATIVES = {
   d5e7: ['Incline DB Curl','DB Curl','Cable Curl','Hammer Curl'],
 };
 
+/* ============================ EXERCISE LIBRARY ============================ */
+const EXERCISE_LIBRARY = {
+  Chest: [
+    'BB Bench Press','DB Bench Press','Smith Bench Press','Machine Chest Press',
+    'Hammer Strength Bench Press','Hammer Strength Incline Press',
+    'Incline BB Press','Incline DB Press','Incline Smith Press',
+    'Decline BB Press','Decline DB Press',
+    'Close-Grip Bench Press',
+    'Push-Up','Deficit Push-Up','Weighted Push-Up','Archer Push-Up',
+    'Weighted Dip','Bench Dip','Dip Machine',
+    'DB Fly','Cable Fly (Mid)','Cable Fly (Low to High)','Cable Fly (High to Low)',
+    'Pec Deck','Pec Deck / Machine Fly','Cable Crossover','Svend Press',
+  ],
+  Back: [
+    'Deadlift','Trap Bar Deadlift','Sumo Deadlift','Snatch-Grip Deadlift',
+    'Rack Pull','Block Pull',
+    'Pull-Up','Weighted Pull-Up','Chin-Up','Weighted Chin-Up','Neutral-Grip Pull-Up','Assisted Pull-Up',
+    'Lat Pulldown','Wide-Grip Pulldown','Close-Grip Pulldown','V-Bar Pulldown','Single-Arm Pulldown','Heavy Lat Pulldown',
+    'Pendlay Row','BB Row','DB Row','Seal Row',
+    'Chest Supported DB Row','Chest Supported Row','Hammer Strength Row',
+    'Seated Cable Row','Single Arm Cable Row',
+    'T-Bar Row','Meadow Row','Inverted Row',
+    'Cable Pullover','DB Pullover','Straight Arm Pulldown',
+    'Shrug (BB)','Shrug (DB)','Shrug (Trap Bar)','Shrug (Cable)',
+  ],
+  Shoulders: [
+    'BB OHP','Seated BB OHP','Smith OHP','Push Press',
+    'DB Shoulder Press','Seated DB Shoulder Press','Hammer Strength Shoulder Press','Machine Shoulder Press',
+    'Arnold Press','Z-Press','Landmine Press',
+    'DB Lateral Raise','Cable Lateral Raise','Machine Lateral Raise','Lean-Away DB Lateral',
+    'Y-Raise','Cable Y-Raise',
+    'Front Raise','Plate Front Raise','Upright Row',
+    'Face Pull','Reverse Pec Deck','Rear Delt Fly','Bent-over DB Reverse Fly','Rear Delt Cable Fly',
+  ],
+  Quads: [
+    'Back Squat','High-Bar Squat','Low-Bar Squat',
+    'Front Squat','Goblet Squat','Smith Squat',
+    'Hack Squat','Hack Squat (heavy)','V-Squat',
+    'Leg Press','Single Leg Press',
+    'Bulgarian Split Squat','Walking Lunge (DB)','Reverse Lunge','Step-Up',
+    'Sissy Squat','Belt Squat',
+    'Leg Extension','Single Leg Extension',
+  ],
+  Hamstrings: [
+    'Romanian Deadlift','DB RDL','Single-Leg RDL',
+    'Stiff Leg Deadlift','Good Morning',
+    'Lying Leg Curl','Seated Leg Curl','Single Leg Curl',
+    'Nordic Curl','Glute-Ham Raise','Cable Pull Through',
+  ],
+  Glutes: [
+    'Hip Thrust','BB Hip Thrust','Single-Leg Hip Thrust',
+    'Glute Bridge','45° Hyperextension','Reverse Hyper',
+    'Cable Pull Through','Cable Kickback',
+    'Glute Machine','Sumo Squat',
+  ],
+  Calves: [
+    'Standing Calf Raise','Seated Calf Raise','Smith Calf Raise',
+    'Donkey Calf Raise','Leg Press Calf Raise','Single-Leg Calf Raise',
+  ],
+  Biceps: [
+    'BB Curl','EZ Bar Curl','DB Curl','Hammer Curl','Cross Body Hammer Curl',
+    'Incline DB Curl','Preacher Curl','Spider Curl','Concentration Curl',
+    'Cable Curl','Cable Hammer Curl','Reverse Curl','Drag Curl',
+  ],
+  Triceps: [
+    'Close-Grip Bench Press','JM Press',
+    'Skull Crusher','Cable Skull Crusher','Lying Tricep Ext',
+    'Overhead Tricep Extension','Cable Overhead Tricep Ext',
+    'Tricep Rope Pushdown','Bar Pushdown','Tricep Pushdown (bar)','Single-Arm Pushdown',
+    'Diamond Push-Up','Bench Dip','Weighted Dip','Dip Machine','Kickback',
+  ],
+  Core: [
+    'Plank','Side Plank','Hanging Leg Raise','Hanging Knee Raise',
+    'Cable Crunch','Decline Sit-Up','Weighted Sit-Up','Ab Wheel Rollout',
+    'Russian Twist','Pallof Press','Cable Woodchop',
+    'Dead Bug','Hollow Body Hold',"Captain's Chair Leg Raise",
+  ],
+  Forearms: [
+    'BB Wrist Curl','DB Wrist Curl','Reverse Wrist Curl',
+    "Farmer's Carry",'Plate Pinch','Wrist Roller',
+  ],
+};
+
 /* ============================ RUN PLAN ============================ */
 const RUN_PLAN = {
   goal: 'Sub-60 10K',
@@ -1623,25 +1831,37 @@ function mergeCloudData(cloudData) {
 
 /* ============================ AUDIO ============================ */
 let audioCtx = null;
-const beep = () => {
+const bell = () => {
   try {
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     const ctx = audioCtx;
-    const now = ctx.currentTime;
-    [0, 0.18, 0.36].forEach(offset => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.frequency.value = 880;
-      osc.type = 'sine';
-      gain.gain.setValueAtTime(0, now + offset);
-      gain.gain.linearRampToValueAtTime(0.25, now + offset + 0.01);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.14);
-      osc.connect(gain).connect(ctx.destination);
-      osc.start(now + offset);
-      osc.stop(now + offset + 0.16);
-    });
+    if (ctx.state === 'suspended') ctx.resume();
+    const partials = [
+      { ratio: 1,    gain: 0.30, dur: 1.8 },
+      { ratio: 2.4,  gain: 0.18, dur: 1.3 },  // strike tone (gives bell character)
+      { ratio: 3.0,  gain: 0.10, dur: 1.0 },
+      { ratio: 4.2,  gain: 0.05, dur: 0.6 },  // shimmer
+    ];
+    const strike = (startOffset, fundamental) => {
+      const t = ctx.currentTime + startOffset;
+      partials.forEach(p => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.frequency.value = fundamental * p.ratio;
+        osc.type = 'sine';
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(p.gain, t + 0.004);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + p.dur);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start(t);
+        osc.stop(t + p.dur + 0.05);
+      });
+    };
+    strike(0, 880);     // ding
+    strike(0.42, 660);  // dong
   } catch {}
 };
+const beep = bell;  // backwards compat for any other callers
 
 /* ============================ COMPONENTS ============================ */
 
@@ -1671,32 +1891,68 @@ function RPEPicker({ value, onPick, onClose }) {
   );
 }
 
-function RestTimer({ duration, onClose }) {
-  const [remaining, setRemaining] = useState(duration);
+function RestTimer({ duration: initialDuration, onClose }) {
+  const [duration, setDuration] = useState(initialDuration);
+  const [remaining, setRemaining] = useState(initialDuration);
   const [done, setDone] = useState(false);
+  const [minimized, setMinimized] = useState(false);
   const startRef = useRef(Date.now());
 
   useEffect(() => {
-    if (done) return;
     const tick = () => {
       const elapsed = (Date.now() - startRef.current) / 1000;
       const left = Math.max(0, duration - elapsed);
       setRemaining(left);
-      if (left <= 0 && !done) {
-        setDone(true);
-        beep();
+      if (left <= 0) {
+        if (!done) {
+          setDone(true);
+          bell();
+        }
+      } else if (done) {
+        // duration extended after done — re-arm so it can ring again
+        setDone(false);
       }
     };
+    tick();
     const id = setInterval(tick, 100);
     return () => clearInterval(id);
   }, [duration, done]);
 
-  const pct = Math.max(0, Math.min(1, remaining / duration));
+  const adjust = (sec) => {
+    setDuration(d => Math.max(0, d + sec));
+  };
+
+  const safeDuration = duration > 0 ? duration : 1;
+  const pct = Math.max(0, Math.min(1, remaining / safeDuration));
   const C = 2 * Math.PI * 110;
   const offset = C * (1 - pct);
 
+  if (minimized) {
+    return (
+      <div
+        className={`rest-mini ${done ? 'done' : ''}`}
+        onClick={() => setMinimized(false)}
+        role="button"
+        aria-label="Expand rest timer"
+      >
+        <span className="rest-mini-icon">⏱</span>
+        <span className="rest-mini-num">{done ? 'GO' : Math.ceil(remaining) + 's'}</span>
+        <button
+          className="rest-mini-close"
+          onClick={(e) => { e.stopPropagation(); onClose(); }}
+          aria-label="Stop timer"
+        >×</button>
+      </div>
+    );
+  }
+
   return (
-    <div className="rest-overlay" onClick={onClose}>
+    <div className="rest-overlay" onClick={() => setMinimized(true)}>
+      <button
+        className="rest-minimize"
+        onClick={(e) => { e.stopPropagation(); setMinimized(true); }}
+        aria-label="Minimize timer"
+      >▾ MINIMIZE</button>
       <div className="rest-circle-wrap" onClick={e => e.stopPropagation()}>
         <svg className="rest-svg" viewBox="0 0 240 240">
           <circle className="rest-track" cx="120" cy="120" r="110" />
@@ -1711,10 +1967,10 @@ function RestTimer({ duration, onClose }) {
           <div className="rest-time-label">{done ? 'GO' : 'rest · sec'}</div>
         </div>
       </div>
-      <div className="rest-actions">
-        <button className="rest-action" onClick={() => { startRef.current -= 15000; }}>-15s</button>
-        <button className="rest-action" onClick={() => { startRef.current += 15000; }}>+15s</button>
-        <button className="rest-action primary" onClick={onClose}>Done</button>
+      <div className="rest-actions" onClick={e => e.stopPropagation()}>
+        <button className="rest-action" onClick={(e) => { e.stopPropagation(); adjust(-15); }}>-15s</button>
+        <button className="rest-action" onClick={(e) => { e.stopPropagation(); adjust(15); }}>+15s</button>
+        <button className="rest-action primary" onClick={(e) => { e.stopPropagation(); onClose(); }}>Done</button>
       </div>
     </div>
   );
@@ -1747,9 +2003,10 @@ function PlateauBanner({ status, type }) {
 function SwapModal({ exercise, currentSwap, onSelect, onClear, onClose }) {
   const slot = exercise.id;
   const presets = ALTERNATIVES[slot] || [];
-  const [customMode, setCustomMode] = useState(false);
+  const [mode, setMode] = useState(presets.length ? 'suggested' : 'library');
   const [customName, setCustomName] = useState('');
   const [customNote, setCustomNote] = useState('');
+  const [search, setSearch] = useState('');
   const currentName = currentSwap?.name || exercise.name;
 
   const submitCustom = () => {
@@ -1759,21 +2016,46 @@ function SwapModal({ exercise, currentSwap, onSelect, onClear, onClose }) {
     onClose();
   };
 
+  const pick = (name) => {
+    onSelect({ id: slot + '_' + name, name, note: '' });
+    onClose();
+  };
+
+  const filteredLibrary = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const result = {};
+    for (const [cat, list] of Object.entries(EXERCISE_LIBRARY)) {
+      const filtered = q ? list.filter(n => n.toLowerCase().includes(q)) : list;
+      if (filtered.length) result[cat] = filtered;
+    }
+    return result;
+  }, [search]);
+
   return (
     <div className="modal-bg" onClick={onClose}>
       <div className="modal" onClick={e => e.stopPropagation()}>
         <div className="modal-handle" />
         <div className="modal-title">Swap Exercise</div>
-        <div className="modal-sub">{exercise.name} slot · pick an alternative</div>
+        <div className="modal-sub">
+          {exercise.name} slot{currentName !== exercise.name ? ` · current: ${currentName}` : ' · pick an alternative'}
+        </div>
 
-        {!customMode ? (
+        <div className="swap-tabs">
+          {presets.length > 0 && (
+            <button className={`swap-tab ${mode==='suggested'?'active':''}`} onClick={() => setMode('suggested')}>Suggested</button>
+          )}
+          <button className={`swap-tab ${mode==='library'?'active':''}`} onClick={() => setMode('library')}>Library</button>
+          <button className={`swap-tab ${mode==='custom'?'active':''}`} onClick={() => setMode('custom')}>Custom</button>
+        </div>
+
+        {mode === 'suggested' && (
           <>
             <div className="swap-list">
               {presets.map(name => (
                 <button
                   key={name}
                   className={`swap-opt ${name === currentName ? 'current' : ''}`}
-                  onClick={() => { onSelect({ id: slot+'_'+name, name, note: '' }); onClose(); }}
+                  onClick={() => pick(name)}
                 >
                   <div className="swap-opt-name">{name}</div>
                   {name === currentName && <div className="swap-opt-current">CURRENT</div>}
@@ -1781,11 +2063,50 @@ function SwapModal({ exercise, currentSwap, onSelect, onClear, onClose }) {
               ))}
             </div>
             <div className="modal-actions">
-              <button className="btn btn-ghost" onClick={() => setCustomMode(true)}>+ Custom</button>
               {currentSwap && <button className="btn btn-danger" onClick={() => { onClear(); onClose(); }}>Reset</button>}
             </div>
           </>
-        ) : (
+        )}
+
+        {mode === 'library' && (
+          <>
+            <input
+              className="custom-input"
+              style={{ width: '100%', marginBottom: 12 }}
+              placeholder="Search exercises…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              autoFocus
+            />
+            <div className="library-list">
+              {Object.entries(filteredLibrary).map(([cat, list]) => (
+                <div key={cat} className="library-cat">
+                  <div className="library-cat-name">{cat}</div>
+                  <div className="library-cat-items">
+                    {list.map(name => (
+                      <button
+                        key={name}
+                        className={`swap-opt ${name === currentName ? 'current' : ''}`}
+                        onClick={() => pick(name)}
+                      >
+                        <div className="swap-opt-name">{name}</div>
+                        {name === currentName && <div className="swap-opt-current">CURRENT</div>}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+              {Object.keys(filteredLibrary).length === 0 && (
+                <div className="empty" style={{ padding: '14px 4px' }}>No matches.</div>
+              )}
+            </div>
+            <div className="modal-actions">
+              {currentSwap && <button className="btn btn-danger" onClick={() => { onClear(); onClose(); }}>Reset</button>}
+            </div>
+          </>
+        )}
+
+        {mode === 'custom' && (
           <>
             <div className="custom-input-row">
               <input
@@ -1803,7 +2124,6 @@ function SwapModal({ exercise, currentSwap, onSelect, onClear, onClose }) {
               />
             </div>
             <div className="modal-actions">
-              <button className="btn btn-ghost" onClick={() => setCustomMode(false)}>Back</button>
               <button className="btn btn-primary" onClick={submitCustom}>Save Custom</button>
             </div>
           </>
@@ -2018,10 +2338,13 @@ function CycleIndicator({ week }) {
 }
 
 function DashboardView({ data, onSelectDay, onAdvanceWeek, onResetWeek }) {
-  const week = data.currentWeek;
-  const program = getProgram(week);
+  const currentWeek = data.currentWeek;
+  const [viewWeek, setViewWeek] = useState(currentWeek);
+  const isPreview = viewWeek !== currentWeek;
+  const offset = viewWeek - currentWeek;
+  const program = getProgram(viewWeek);
   const completedDays = ['d1','d2','d3','d4','d5'].filter(id => {
-    const sk = sessionKey(week, id);
+    const sk = sessionKey(viewWeek, id);
     const sess = data.sessions[sk];
     if (!sess) return false;
     return sess.exercises && Object.values(sess.exercises).some(ex => ex.sets?.some(s => s.done));
@@ -2031,9 +2354,34 @@ function DashboardView({ data, onSelectDay, onAdvanceWeek, onResetWeek }) {
 
   return (
     <div>
-      <CycleIndicator week={week} />
+      <div className="week-nav">
+        <button
+          className="week-nav-btn"
+          onClick={() => setViewWeek(w => Math.max(0, w - 1))}
+          disabled={viewWeek <= 0}
+          aria-label="Previous week"
+        >◂</button>
+        <div className="week-nav-meta">
+          {isPreview
+            ? (offset > 0 ? `Preview · +${offset} wk` : `Past · ${offset} wk`)
+            : 'Current Week'}
+        </div>
+        <button
+          className="week-nav-btn"
+          onClick={() => setViewWeek(w => w + 1)}
+          aria-label="Next week"
+        >▸</button>
+      </div>
 
-      <div className="section-label">This Week's Sessions</div>
+      <CycleIndicator week={viewWeek} />
+
+      {isPreview && (
+        <button className="week-nav-back" onClick={() => setViewWeek(currentWeek)}>
+          ↺ Back to current week
+        </button>
+      )}
+
+      <div className="section-label">{isPreview ? 'Sessions' : "This Week's Sessions"}</div>
       <div className="day-grid">
         {['d1','d2','d3','d4','d5'].map(dayId => {
           const day = program[dayId];
@@ -2042,7 +2390,7 @@ function DashboardView({ data, onSelectDay, onAdvanceWeek, onResetWeek }) {
             <button
               key={dayId}
               className={`day-card ${isComplete ? 'complete' : ''}`}
-              onClick={() => onSelectDay(dayId)}
+              onClick={() => onSelectDay(viewWeek, dayId)}
             >
               <div className="day-card-num">DAY {dayId.slice(1).padStart(2,'0')}</div>
               <div className="day-card-name">{day.name}</div>
@@ -2059,10 +2407,10 @@ function DashboardView({ data, onSelectDay, onAdvanceWeek, onResetWeek }) {
         })}
       </div>
 
-      {completedDays.length === 5 && (
+      {!isPreview && completedDays.length === 5 && (
         <div className="section-label" style={{ marginTop: 22 }}>Week Complete</div>
       )}
-      {completedDays.length === 5 && (
+      {!isPreview && completedDays.length === 5 && (
         <div className="card" style={{ display: 'flex', gap: 8 }}>
           <button className="btn btn-primary" onClick={onAdvanceWeek}>Advance to Next Week</button>
         </div>
@@ -2107,8 +2455,8 @@ function DashboardView({ data, onSelectDay, onAdvanceWeek, onResetWeek }) {
   );
 }
 
-function SessionView({ data, dayId, onBack, onSave }) {
-  const week = data.currentWeek;
+function SessionView({ data, week: weekProp, dayId, onBack, onSave }) {
+  const week = weekProp ?? data.currentWeek;
   const program = getProgram(week);
   const day = program[dayId];
   const sk = sessionKey(week, dayId);
@@ -2862,7 +3210,7 @@ function App() {
   const [syncState, setSyncState] = useState('idle');
   const [data, setData] = useState(loadData);
   const [tab, setTab] = useState('train');
-  const [activeDay, setActiveDay] = useState(null);
+  const [activeSession, setActiveSession] = useState(null); // { week, dayId } | null
   const debounceRef = useRef(null);
 
   useEffect(() => {
@@ -2948,12 +3296,13 @@ function App() {
 
   let view;
   if (tab === 'train') {
-    if (activeDay) {
+    if (activeSession) {
       view = (
         <SessionView
           data={data}
-          dayId={activeDay}
-          onBack={() => setActiveDay(null)}
+          week={activeSession.week}
+          dayId={activeSession.dayId}
+          onBack={() => setActiveSession(null)}
           onSave={(patch, silent) => update(patch, silent)}
         />
       );
@@ -2961,7 +3310,7 @@ function App() {
       view = (
         <DashboardView
           data={data}
-          onSelectDay={setActiveDay}
+          onSelectDay={(week, dayId) => setActiveSession({ week, dayId })}
           onAdvanceWeek={advanceWeek}
           onResetWeek={resetWeek}
         />
@@ -2993,7 +3342,7 @@ function App() {
         </div>
       </header>
       <main>{view}</main>
-      {!activeDay && <TabBar tab={tab} onPick={setTab} />}
+      {!activeSession && <TabBar tab={tab} onPick={setTab} />}
     </div>
   );
 }
