@@ -726,7 +726,8 @@
   .bw-log-btn:hover { background: #d6f74e; }
   .bw-input-big:focus { border-color: var(--accent); }
   .bw-stat-grid {
-    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 14px;
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 14px auto 0;
+    max-width: 300px;
   }
   .bw-stat {
     padding: 10px; border-radius: 12px;
@@ -1953,6 +1954,42 @@ function RestTimer({ duration: initialDuration, onClose }) {
   const [done, setDone] = useState(false);
   const [minimized, setMinimized] = useState(false);
   const startRef = useRef(Date.now());
+  const wakeLockRef = useRef(null);
+
+  // Keep screen awake + schedule background notification for the full timer duration
+  useEffect(() => {
+    // Screen wake lock — prevents auto-lock while timer runs
+    if ('wakeLock' in navigator) {
+      navigator.wakeLock.request('screen').then(l => { wakeLockRef.current = l; }).catch(() => {});
+    }
+    // Request notification permission then tell the service worker when to fire
+    const scheduleNotification = async () => {
+      if (!('serviceWorker' in navigator) || !('Notification' in window)) return;
+      const perm = Notification.permission === 'granted'
+        ? 'granted'
+        : await Notification.requestPermission().catch(() => 'denied');
+      if (perm !== 'granted') return;
+      const reg = await navigator.serviceWorker.ready.catch(() => null);
+      reg?.active?.postMessage({ type: 'SCHEDULE_REST_DONE', delayMs: initialDuration * 1000 });
+    };
+    scheduleNotification();
+    return () => {
+      wakeLockRef.current?.release().catch(() => {});
+      wakeLockRef.current = null;
+      navigator.serviceWorker?.ready.then(reg =>
+        reg.active?.postMessage({ type: 'CANCEL_REST' })
+      ).catch(() => {});
+    };
+  }, []);
+
+  // Re-schedule when user extends the timer
+  useEffect(() => {
+    navigator.serviceWorker?.ready.then(reg => {
+      if (Notification.permission === 'granted') {
+        reg.active?.postMessage({ type: 'SCHEDULE_REST_DONE', delayMs: remaining * 1000 });
+      }
+    }).catch(() => {});
+  }, [duration]);
 
   useEffect(() => {
     const tick = () => {
@@ -3426,6 +3463,12 @@ function App() {
   const [activeSession, setActiveSession] = useState(null); // { week, dayId } | null
   const [showLogin, setShowLogin] = useState(false);
   const debounceRef = useRef(null);
+
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js').catch(() => {});
+    }
+  }, []);
 
   useEffect(() => {
     sb.auth.getSession().then(({ data }) => {
