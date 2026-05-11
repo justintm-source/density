@@ -3363,8 +3363,8 @@ function TabBar({ tab, onPick }) {
   );
 }
 
-function LoginView() {
-  const [email, setEmail] = useState('');
+function LoginView({ onDismiss }) {
+  const [email, setEmail] = useState('justinmrck@gmail.com');
   const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
@@ -3383,36 +3383,35 @@ function LoginView() {
   };
 
   return (
-    <div className="login-screen">
-      <div className="login-box">
-        <div className="login-brand">DENSITY</div>
-        <div className="login-tag">TRAINING TRACKER</div>
-        {!sent ? (
-          <>
-            <div className="login-blurb">Sign in to sync your training across devices.</div>
-            <input
-              type="email"
-              inputMode="email"
-              autoCapitalize="off"
-              autoCorrect="off"
-              placeholder="your@email.com"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') send(); }}
-              className="login-input"
-            />
-            <button className="login-btn" onClick={send} disabled={busy || !email.trim()}>
-              {busy ? 'SENDING...' : 'SEND MAGIC LINK'}
-            </button>
-            {err && <div className="login-err">{err}</div>}
-          </>
-        ) : (
-          <div className="login-sent">
-            <div className="login-sent-title">CHECK YOUR EMAIL</div>
-            <div className="login-sent-sub">Magic link sent to<br/>{email}</div>
-          </div>
-        )}
-      </div>
+    <div className="login-box" style={{position:'relative'}}>
+      {onDismiss && <button onClick={onDismiss} style={{position:'absolute',top:12,right:12,background:'none',border:'none',color:'var(--muted)',fontSize:18,cursor:'pointer',lineHeight:1}}>✕</button>}
+      <div className="login-brand">DENSITY</div>
+      <div className="login-tag">SIGN IN TO RESTORE DATA</div>
+      {!sent ? (
+        <>
+          <div className="login-blurb">Send a magic link to sync your cloud data to this device.</div>
+          <input
+            type="email"
+            inputMode="email"
+            autoCapitalize="off"
+            autoCorrect="off"
+            placeholder="your@email.com"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') send(); }}
+            className="login-input"
+          />
+          <button className="login-btn" onClick={send} disabled={busy || !email.trim()}>
+            {busy ? 'SENDING...' : 'SEND MAGIC LINK'}
+          </button>
+          {err && <div className="login-err">{err}</div>}
+        </>
+      ) : (
+        <div className="login-sent">
+          <div className="login-sent-title">CHECK YOUR EMAIL</div>
+          <div className="login-sent-sub">Magic link sent to<br/>{email}<br/><br/>Tap the link — your data will restore automatically.</div>
+        </div>
+      )}
     </div>
   );
 }
@@ -3425,6 +3424,7 @@ function App() {
   const [data, setData] = useState(loadData);
   const [tab, setTab] = useState('train');
   const [activeSession, setActiveSession] = useState(null); // { week, dayId } | null
+  const [showLogin, setShowLogin] = useState(false);
   const debounceRef = useRef(null);
 
   useEffect(() => {
@@ -3434,6 +3434,7 @@ function App() {
     });
     const { data: sub } = sb.auth.onAuthStateChange((_evt, s) => {
       setSession(s || null);
+      if (s) setShowLogin(false);
       if (!s) setHydrated(false);
     });
     return () => sub.subscription.unsubscribe();
@@ -3568,10 +3569,18 @@ function App() {
           </div>
           {session && <span className={`sync-dot ${syncState}`} title={syncState === 'syncing' ? 'Syncing' : syncState === 'offline' ? 'Offline' : 'Synced'}></span>}
           {session && <button className="signout-btn" onClick={signOut}>OUT</button>}
+          {!session && <button className="signout-btn" onClick={() => setShowLogin(true)}>SYNC</button>}
         </div>
       </header>
       <main>{view}</main>
       {!activeSession && <TabBar tab={tab} onPick={setTab} />}
+      {showLogin && (
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.7)',zIndex:999,display:'flex',alignItems:'center',justifyContent:'center'}} onClick={() => setShowLogin(false)}>
+          <div onClick={e => e.stopPropagation()}>
+            <LoginView onDismiss={() => setShowLogin(false)} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
