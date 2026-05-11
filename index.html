@@ -334,6 +334,8 @@
   .ex-badge.acc { background: rgba(232,230,224,0.05); color: var(--muted); border: 1px solid var(--dark); }
   .ex-badge.swap { background: rgba(240,192,96,0.1); color: var(--yellow); border: 1px solid rgba(240,192,96,0.3); }
   .ex-badge.custom { background: rgba(184,127,255,0.12); color: #B87FFF; border: 1px solid rgba(184,127,255,0.3); }
+  .ex-badge.ss { background: rgba(96,165,250,0.1); color: #60A5FA; border: 1px solid rgba(96,165,250,0.3); }
+  .ex-tempo-row { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: 0.06em; margin-bottom: 10px; display: flex; gap: 14px; }
   .ex-target { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--muted); margin-bottom: 10px; line-height: 1.55; }
   .ex-timer {
     flex-shrink: 0;
@@ -1082,8 +1084,7 @@ const { useState, useEffect, useRef, useMemo, useCallback } = React;
 const STORAGE_KEY = 'mfm-v5';
 
 const REST_PROTOCOLS = {
-  main: 90, acc: 40, iso: 30,
-  lateral: 20, face_pull: 20, rdl: 45,
+  heavy: 150, main: 120, acc: 90, iso: 60, lateral: 60, ss: 60,
 };
 
 // Tuchscherer/Zourdos RPE chart: rpe -> reps(1-12) -> %1RM
@@ -1101,173 +1102,194 @@ const RPE_CHART = {
 const RPE_OPTIONS = [6, 6.5, 7, 7.5, 8, 8.5, 9, 9.5, 10];
 
 /* ============================ PROGRAM DATA ============================ */
-// Exercise object: id, name, type ('main'|'acc'|'cluster'), defaultSets, repMin, repMax, rest, note, clusterPattern?
-const PROGRAM_A = {
+// 6-week mesocycle: VarA (Wk1,3), VarB (Wk2,4), VarC/Peak (Wk5), VarA/Deload (Wk6)
+// Exercise fields: id, name, type, defaultSets, repMin, repMax, rest, note, tempo, rpeTarget, superset?, ssGroup?
+const PROGRAM = {
   d1: {
-    name: 'Push — Chest Focus', focus: 'Chest · Triceps · Shoulders',
-    exercises: [
-      { id:'d1e1', name:'Weighted Dip',           type:'main', defaultSets:5, repMin:3,  repMax:5,  rest:'main',    note:'Forward lean for chest. Stop 1–2 reps shy of failure.' },
-      { id:'d1e2', name:'Incline DB Press',       type:'acc',  defaultSets:5, repMin:12, repMax:15, rest:'acc',     note:'Same weight all sets. Chase the pump.' },
-      { id:'d1e3', name:'Cable Fly (Low to High)',type:'acc',  defaultSets:4, repMin:15, repMax:20, rest:'iso',     note:'Full stretch at bottom. Squeeze the lockout.' },
-      { id:'d1e4', name:'DB Lateral Raise',       type:'acc',  defaultSets:5, repMin:18, repMax:25, rest:'lateral', note:'Light. Medial delt pump only.' },
-      { id:'d1e5', name:'Cable Lateral Raise',    type:'acc',  defaultSets:4, repMin:15, repMax:20, rest:'lateral', note:'Unilateral. Constant tension top to bottom.' },
-      { id:'d1e6', name:'Tricep Rope Pushdown',   type:'acc',  defaultSets:4, repMin:15, repMax:20, rest:'lateral', note:'Spread rope at bottom. Squeeze at extension.' },
-      { id:'d1e7', name:'Overhead Tricep Extension', type:'acc', defaultSets:4, repMin:12, repMax:15, rest:'iso',   note:'Full stretch at top — long head priority.' },
-    ],
+    name: 'Upper A — Strength', focus: 'Chest · Back · Shoulders · Arms',
+    warmup: '5 min cardio + band pull-aparts 2×15 + band dislocations 2×10',
+    varA: { exercises: [
+      { id:'d1e1',   name:'Incline Hammer Strength Press', type:'main', defaultSets:4, repMin:5,  repMax:5,  rest:'heavy',   note:'Primary chest — depress scapula, feet planted', tempo:'2:0:1:0', rpeTarget:'8–9' },
+      { id:'d1e2',   name:'HS Stepped Back Rows',          type:'main', defaultSets:4, repMin:5,  repMax:5,  rest:'heavy',   note:'Full lat stretch, pull through elbow', tempo:'2:0:1:0', rpeTarget:'8–9' },
+      { id:'d1Ae3',  name:'Seated DB Shoulder Press',      type:'acc',  defaultSets:3, repMin:6,  repMax:8,  rest:'main',    note:'If overhead aggravates RC, use HS machine', tempo:'2:0:2:0', rpeTarget:'8–9' },
+      { id:'d1e4',   name:'Neutral Grip Lat Pulldowns',    type:'acc',  defaultSets:3, repMin:8,  repMax:10, rest:'acc',     note:'Lean back slightly, pull elbows to hips', tempo:'3:1:1:1', rpeTarget:'8' },
+      { id:'d1Ae5a', name:'Chest Supported Lat Raises',    type:'acc',  defaultSets:3, repMin:10, repMax:12, rest:'ss',      note:'Elbows rise before wrists', tempo:'controlled', rpeTarget:'8', superset:true, ssGroup:'d1Ass1' },
+      { id:'d1Ae5b', name:'Rear Delt Flies',               type:'acc',  defaultSets:3, repMin:10, repMax:12, rest:'lateral', note:'SS with Lat Raises', tempo:'controlled', rpeTarget:'8', superset:true, ssGroup:'d1Ass1' },
+      { id:'d1Ae6a', name:'Tricep Pressdowns',             type:'acc',  defaultSets:2, repMin:10, repMax:12, rest:'ss',      note:'Full ROM, minimize swinging', tempo:'controlled', rpeTarget:'8', superset:true, ssGroup:'d1Ass2' },
+      { id:'d1Ae6b', name:'Hammer Curls',                  type:'acc',  defaultSets:2, repMin:10, repMax:12, rest:'lateral', note:'SS with Tricep Pressdowns', tempo:'controlled', rpeTarget:'8', superset:true, ssGroup:'d1Ass2' },
+    ]},
+    varB: { exercises: [
+      { id:'d1e1',   name:'Incline Hammer Strength Press', type:'main', defaultSets:4, repMin:6,  repMax:8,  rest:'heavy',   note:'Heavier than Var A — push for strength', tempo:'2:0:1:0', rpeTarget:'9' },
+      { id:'d1Be2',  name:'HS Low Row',                    type:'main', defaultSets:4, repMin:6,  repMax:8,  rest:'heavy',   note:'Lean 45°, humerus horizontal, pull through elbow', tempo:'2:0:1:0', rpeTarget:'9' },
+      { id:'d1Be3',  name:'HS Shoulder Press',             type:'acc',  defaultSets:3, repMin:6,  repMax:8,  rest:'main',    note:'Machine path — safer for RC than free weight', tempo:'2:0:1:0', rpeTarget:'9' },
+      { id:'d1Be4',  name:'Wide Grip Lat Pulldowns',       type:'acc',  defaultSets:3, repMin:8,  repMax:10, rest:'acc',     note:'Wide overhand grip, pull to upper chest', tempo:'3:1:1:1', rpeTarget:'8–9' },
+      { id:'d1Be5a', name:'Cable Lateral Raises',          type:'acc',  defaultSets:3, repMin:10, repMax:12, rest:'ss',      note:'Cables provide constant tension', tempo:'controlled', rpeTarget:'8', superset:true, ssGroup:'d1Bss1' },
+      { id:'d1Be5b', name:'Face Pulls',                    type:'acc',  defaultSets:3, repMin:10, repMax:12, rest:'lateral', note:'SS with Cable Lateral Raises', tempo:'controlled', rpeTarget:'8', superset:true, ssGroup:'d1Bss1' },
+      { id:'d1Be6a', name:'Overhead Tricep Extension',     type:'acc',  defaultSets:2, repMin:10, repMax:12, rest:'ss',      note:'Full stretch at bottom', tempo:'controlled', rpeTarget:'8', superset:true, ssGroup:'d1Bss2' },
+      { id:'d1Be6b', name:'Incline DB Curls',              type:'acc',  defaultSets:2, repMin:10, repMax:12, rest:'lateral', note:'Full stretch at bottom. SS with Tricep Ext', tempo:'controlled', rpeTarget:'8', superset:true, ssGroup:'d1Bss2' },
+    ]},
+    varC: { exercises: [
+      { id:'d1e1',   name:'Incline Hammer Strength Press', type:'main', defaultSets:4, repMin:3,  repMax:5,  rest:'heavy',   note:'Peak week — heaviest loads, longest rest', tempo:'2:0:1:0', rpeTarget:'9.5' },
+      { id:'d1e2',   name:'HS Stepped Back Rows',          type:'main', defaultSets:4, repMin:3,  repMax:5,  rest:'heavy',   note:'Match pressing strength, full ROM', tempo:'2:0:1:0', rpeTarget:'9.5' },
+      { id:'d1Ce3',  name:'DB Arnold Press',               type:'acc',  defaultSets:3, repMin:8,  repMax:10, rest:'main',    note:'Rotate wrists as you press — fresh stimulus', tempo:'2:0:1:0', rpeTarget:'9' },
+      { id:'d1e4',   name:'Neutral Grip Lat Pulldowns',    type:'acc',  defaultSets:3, repMin:6,  repMax:8,  rest:'acc',     note:'Heavier than usual, controlled eccentric', tempo:'3:1:1:1', rpeTarget:'9' },
+      { id:'d1Ce5a', name:'DB Lateral Raises',             type:'acc',  defaultSets:3, repMin:12, repMax:15, rest:'ss',      note:'Higher reps, chase the pump', tempo:'controlled', rpeTarget:'8', superset:true, ssGroup:'d1Css1' },
+      { id:'d1Ce5b', name:'Rear Delt Rows',                type:'acc',  defaultSets:3, repMin:12, repMax:15, rest:'lateral', note:'SS with Lateral Raises', tempo:'controlled', rpeTarget:'8', superset:true, ssGroup:'d1Css1' },
+      { id:'d1Ce6a', name:'Close Grip Pressdowns',         type:'acc',  defaultSets:2, repMin:8,  repMax:10, rest:'ss',      note:'Heavier arm work this week', tempo:'controlled', rpeTarget:'9', superset:true, ssGroup:'d1Css2' },
+      { id:'d1Ce6b', name:'EZ Bar Curls',                  type:'acc',  defaultSets:2, repMin:8,  repMax:10, rest:'lateral', note:'Heavier arm work this week. SS with Pressdowns', tempo:'controlled', rpeTarget:'9', superset:true, ssGroup:'d1Css2' },
+    ]},
   },
   d2: {
-    name:'Pull — Back Focus', focus:'Lats · Mid-Back · Biceps · Rear Delts',
-    exercises: [
-      { id:'d2e1', name:'Weighted Chin-Up',       type:'main', defaultSets:5, repMin:3,  repMax:5,  rest:'main',     note:'Dead hang. Full chin over bar. No kipping.' },
-      { id:'d2e2', name:'Lat Pulldown',           type:'acc',  defaultSets:5, repMin:12, repMax:15, rest:'acc',      note:'Full stretch at top. Elbows to hips.' },
-      { id:'d2e3', name:'Seated Cable Row',       type:'acc',  defaultSets:4, repMin:12, repMax:15, rest:'iso',      note:'Squeeze mid-back at end range. Brief pause.' },
-      { id:'d2e4', name:'Straight Arm Pulldown',  type:'acc',  defaultSets:4, repMin:15, repMax:20, rest:'lateral',  note:'Pure lat isolation. Elbows to pockets.' },
-      { id:'d2e5', name:'Face Pull',              type:'acc',  defaultSets:4, repMin:20, repMax:25, rest:'face_pull',note:'Always high rep, always light. Rear delt health.' },
-      { id:'d2e6', name:'DB Curl',                type:'acc',  defaultSets:4, repMin:12, repMax:15, rest:'iso',      note:'Supinate fully at top. No swing.' },
-      { id:'d2e7', name:'Cable Curl',             type:'acc',  defaultSets:4, repMin:15, repMax:20, rest:'lateral',  note:'Constant tension. Pump finisher.' },
-    ],
+    name: 'Lower A — Quad Focus', focus: 'Quads · Hamstrings · Glutes · Calves',
+    warmup: '5 min bike + BW squats 1×10',
+    varA: { exercises: [
+      { id:'d2e1',   name:'Hip Abductors',             type:'acc',  defaultSets:2, repMin:12, repMax:15, rest:'lateral', note:'Hold at top 2 sec — glute med activation for valgus correction', tempo:'2:0:1:2', rpeTarget:'7' },
+      { id:'d2e2',   name:'V-Bar Lever Squat',         type:'main', defaultSets:4, repMin:6,  repMax:8,  rest:'heavy',   note:'Primary quad — fixed path protects back, go deep', tempo:'2:0:1:0', rpeTarget:'8–9' },
+      { id:'d2Ae3',  name:'Leg Press',                 type:'acc',  defaultSets:3, repMin:8,  repMax:10, rest:'main',    note:'Feet slightly narrow, full ROM, continuous tension', tempo:'2:0:2:0', rpeTarget:'8–9' },
+      { id:'d2e4',   name:'Seated Hamstring Curl',     type:'acc',  defaultSets:3, repMin:10, repMax:12, rest:'acc',     note:'Toes up, lean forward, hold contraction', tempo:'2:1:1:1', rpeTarget:'8' },
+      { id:'d2e5',   name:'Leg Extensions',            type:'acc',  defaultSets:3, repMin:8,  repMax:10, rest:'acc',     note:'2/3 rep → pause → finish → squeeze top → control down', tempo:'2:1:1:1', rpeTarget:'8–9' },
+      { id:'d2e6',   name:'Seated Calf Raises',        type:'acc',  defaultSets:3, repMin:10, repMax:12, rest:'lateral', note:'Full stretch, 3-sec hold at top', tempo:'2:0:1:3', rpeTarget:'8' },
+      { id:'d2e7',   name:'Ab Movement of Choice',     type:'acc',  defaultSets:2, repMin:10, repMax:12, rest:'lateral', note:'Cable crunch, hanging knee raise, etc.', tempo:'controlled', rpeTarget:'8' },
+    ]},
+    varB: { exercises: [
+      { id:'d2e1',   name:'Hip Abductors',             type:'acc',  defaultSets:2, repMin:12, repMax:15, rest:'lateral', note:'Hold at top — valgus correction', tempo:'2:0:1:2', rpeTarget:'7' },
+      { id:'d2e2',   name:'V-Bar Lever Squat',         type:'main', defaultSets:4, repMin:8,  repMax:10, rest:'heavy',   note:'Higher reps than Var A, more TUT', tempo:'2:0:1:0', rpeTarget:'9' },
+      { id:'d2Be3',  name:'Trap Bar Deadlift',         type:'main', defaultSets:3, repMin:6,  repMax:8,  rest:'heavy',   note:"Brace hard, hinge don't squat, neutral spine — skip if back feels off", tempo:'2:0:1:0', rpeTarget:'8–9' },
+      { id:'d2e4',   name:'Seated Hamstring Curl',     type:'acc',  defaultSets:3, repMin:8,  repMax:10, rest:'acc',     note:'Heavier than Var A', tempo:'2:1:1:1', rpeTarget:'9' },
+      { id:'d2Be5',  name:'Single Leg Extensions',     type:'acc',  defaultSets:3, repMin:10, repMax:12, rest:'lateral', note:'Per leg — fixes quad imbalances', tempo:'2:1:1:1', rpeTarget:'8' },
+      { id:'d2e6',   name:'Seated Calf Raises',        type:'acc',  defaultSets:3, repMin:12, repMax:15, rest:'lateral', note:'Higher reps this variation', tempo:'2:0:1:3', rpeTarget:'8' },
+      { id:'d2Be7',  name:'Hanging Knee Raises',       type:'acc',  defaultSets:2, repMin:10, repMax:12, rest:'lateral', note:'Control the swing', tempo:'controlled', rpeTarget:'8' },
+    ]},
+    varC: { exercises: [
+      { id:'d2e1',   name:'Hip Abductors',             type:'acc',  defaultSets:2, repMin:15, repMax:20, rest:'lateral', note:'Lighter, higher reps — blood flow', tempo:'2:0:1:2', rpeTarget:'7' },
+      { id:'d2e2',   name:'V-Bar Lever Squat',         type:'main', defaultSets:4, repMin:3,  repMax:5,  rest:'heavy',   note:'Peak week — heaviest loads', tempo:'2:0:1:0', rpeTarget:'9.5' },
+      { id:'d2Ce3',  name:'Leg Press (close stance)',  type:'acc',  defaultSets:3, repMin:6,  repMax:8,  rest:'main',    note:'Close stance = more quad emphasis', tempo:'2:0:2:0', rpeTarget:'9' },
+      { id:'d2Ce4',  name:'Lying Hamstring Curl',      type:'acc',  defaultSets:3, repMin:10, repMax:12, rest:'acc',     note:'Different angle than seated — peak contraction', tempo:'2:0:1:0', rpeTarget:'9' },
+      { id:'d2e5',   name:'Leg Extensions',            type:'acc',  defaultSets:3, repMin:8,  repMax:10, rest:'acc',     note:'Last set: drop 30%, rep to failure', tempo:'2:1:1:1', rpeTarget:'9.5' },
+      { id:'d2e6',   name:'Seated Calf Raises',        type:'acc',  defaultSets:3, repMin:8,  repMax:10, rest:'lateral', note:'Heavier, controlled', tempo:'2:0:1:3', rpeTarget:'9' },
+      { id:'d2Ce7',  name:'Cable Crunches',            type:'acc',  defaultSets:2, repMin:10, repMax:12, rest:'lateral', note:'Controlled — feel the abs not the hip flexors', tempo:'controlled', rpeTarget:'8' },
+    ]},
   },
   d3: {
-    name:'Legs', focus:'Quads · Glutes · Hamstrings · Calves',
-    exercises: [
-      { id:'d3e1', name:'Bulgarian Split Squat',  type:'main', defaultSets:5, repMin:3,  repMax:5,  rest:'main',    note:"Note imbalances — don't compensate, fix them." },
-      { id:'d3e2', name:'Leg Press',              type:'acc',  defaultSets:5, repMin:15, repMax:20, rest:'acc',     note:"Don't lock knees. Chase the quad pump." },
-      { id:'d3e3', name:'Leg Extension',          type:'acc',  defaultSets:5, repMin:18, repMax:25, rest:'iso',     note:'1s pause at top. Hammer the quad.' },
-      { id:'d3e4', name:'Lying Leg Curl',         type:'acc',  defaultSets:4, repMin:12, repMax:15, rest:'iso',     note:'Point toes. Squeeze peak contraction.' },
-      { id:'d3e5', name:'Hip Thrust',             type:'acc',  defaultSets:4, repMin:15, repMax:20, rest:'acc',     note:'1s pause at top. Drive through heels.' },
-      { id:'d3e6', name:'Standing Calf Raise',    type:'acc',  defaultSets:5, repMin:20, repMax:25, rest:'iso',     note:'Full stretch at bottom. Slow eccentric.' },
-    ],
+    name: 'Arms / Shoulders / Calves', focus: 'Biceps · Triceps · Shoulders · Calves',
+    warmup: 'All supersets — no separate warm-up needed',
+    varA: { exercises: [
+      { id:'d3e1',   name:'HS Shoulder Press',          type:'main', defaultSets:3, repMin:6,  repMax:8,  rest:'main',    note:'Full ROM, lock out, control each rep', tempo:'2:0:1:0', rpeTarget:'8–9' },
+      { id:'d3Ae2',  name:'DB Arnold Press',            type:'acc',  defaultSets:3, repMin:10, repMax:12, rest:'acc',     note:'Palms facing you at bottom, rotate as you press', tempo:'2:0:1:0', rpeTarget:'8' },
+      { id:'d3Ae3a', name:'Straight Bar Cable Curls',   type:'acc',  defaultSets:3, repMin:10, repMax:12, rest:'ss',      note:'Arms pinned, minimize swinging', tempo:'controlled', rpeTarget:'8', superset:true, ssGroup:'d3Ass1' },
+      { id:'d3Ae3b', name:'Tricep Pressdowns',          type:'acc',  defaultSets:3, repMin:10, repMax:12, rest:'lateral', note:'SS with Cable Curls', tempo:'controlled', rpeTarget:'8', superset:true, ssGroup:'d3Ass1' },
+      { id:'d3Ae4a', name:'Incline DB Curls',           type:'acc',  defaultSets:2, repMin:10, repMax:12, rest:'ss',      note:'Full stretch at bottom', tempo:'controlled', rpeTarget:'8–9', superset:true, ssGroup:'d3Ass2' },
+      { id:'d3Ae4b', name:'Overhead Tricep Extension',  type:'acc',  defaultSets:2, repMin:10, repMax:12, rest:'lateral', note:'Full stretch at bottom. SS with Curls', tempo:'controlled', rpeTarget:'8–9', superset:true, ssGroup:'d3Ass2' },
+      { id:'d3Ae5a', name:'Lateral Raises',             type:'acc',  defaultSets:2, repMin:12, repMax:15, rest:'ss',      note:'Elbows rise before wrists', tempo:'controlled', rpeTarget:'8', superset:true, ssGroup:'d3Ass3' },
+      { id:'d3Ae5b', name:'Rear Delt Rows',             type:'acc',  defaultSets:2, repMin:12, repMax:15, rest:'lateral', note:'SS with Lateral Raises', tempo:'controlled', rpeTarget:'8', superset:true, ssGroup:'d3Ass3' },
+      { id:'d3e6',   name:'Seated Calf Raises',         type:'acc',  defaultSets:3, repMin:10, repMax:12, rest:'lateral', note:'Full stretch, 3-sec hold', tempo:'2:0:1:3', rpeTarget:'8' },
+      { id:'d3e7',   name:'Standing Calf Raises',       type:'acc',  defaultSets:3, repMin:8,  repMax:10, rest:'lateral', note:'3-sec hold at top, slow eccentric', tempo:'2:0:3:1', rpeTarget:'8' },
+    ]},
+    varB: { exercises: [
+      { id:'d3e1',   name:'HS Shoulder Press',          type:'main', defaultSets:3, repMin:8,  repMax:10, rest:'main',    note:'Higher reps, more TUT', tempo:'2:0:1:0', rpeTarget:'9' },
+      { id:'d3Be2',  name:'Cable Lateral Raises',       type:'acc',  defaultSets:3, repMin:12, repMax:15, rest:'lateral', note:'Constant tension from cable', tempo:'3:1:1:1', rpeTarget:'8' },
+      { id:'d3Be3a', name:'EZ Bar Curls',               type:'acc',  defaultSets:3, repMin:8,  repMax:10, rest:'ss',      note:'Heavier arm compounds', tempo:'controlled', rpeTarget:'9', superset:true, ssGroup:'d3Bss1' },
+      { id:'d3Be3b', name:'Skull Crushers',             type:'acc',  defaultSets:3, repMin:8,  repMax:10, rest:'lateral', note:'SS with EZ Bar Curls', tempo:'controlled', rpeTarget:'9', superset:true, ssGroup:'d3Bss1' },
+      { id:'d3Be4a', name:'Cable Hammer Curls',         type:'acc',  defaultSets:2, repMin:10, repMax:12, rest:'ss',      note:'Cables for constant tension', tempo:'controlled', rpeTarget:'8', superset:true, ssGroup:'d3Bss2' },
+      { id:'d3Be4b', name:'Cable Overhead Extension',   type:'acc',  defaultSets:2, repMin:10, repMax:12, rest:'lateral', note:'SS with Hammer Curls', tempo:'controlled', rpeTarget:'8', superset:true, ssGroup:'d3Bss2' },
+      { id:'d3Be5a', name:'DB Front Raises',            type:'acc',  defaultSets:2, repMin:12, repMax:15, rest:'ss',      note:'Hit all 3 delt heads', tempo:'controlled', rpeTarget:'8', superset:true, ssGroup:'d3Bss3' },
+      { id:'d3Be5b', name:'Rear Delt Machine Flies',    type:'acc',  defaultSets:2, repMin:12, repMax:15, rest:'lateral', note:'SS with Front Raises', tempo:'controlled', rpeTarget:'8', superset:true, ssGroup:'d3Bss3' },
+      { id:'d3e7',   name:'Standing Calf Raises',       type:'acc',  defaultSets:3, repMin:8,  repMax:10, rest:'lateral', note:'Heavier this variation', tempo:'2:0:3:1', rpeTarget:'8' },
+      { id:'d3e6',   name:'Seated Calf Raises',         type:'acc',  defaultSets:3, repMin:12, repMax:15, rest:'lateral', note:'Higher reps, hold the stretch', tempo:'2:0:1:3', rpeTarget:'8' },
+    ]},
+    varC: { exercises: [
+      { id:'d3e1',   name:'HS Shoulder Press',          type:'main', defaultSets:3, repMin:5,  repMax:6,  rest:'main',    note:'Peak week — heavy pressing', tempo:'2:0:1:0', rpeTarget:'9.5' },
+      { id:'d3Ae2',  name:'DB Arnold Press',            type:'acc',  defaultSets:3, repMin:8,  repMax:10, rest:'acc',     note:'Heavier than Var A', tempo:'2:0:1:0', rpeTarget:'9' },
+      { id:'d3Ce3a', name:'Straight Bar Curls',         type:'acc',  defaultSets:3, repMin:8,  repMax:10, rest:'ss',      note:'Heavier, lower reps', tempo:'controlled', rpeTarget:'9', superset:true, ssGroup:'d3Css1' },
+      { id:'d3Ce3b', name:'Close Grip Pressdowns',      type:'acc',  defaultSets:3, repMin:8,  repMax:10, rest:'lateral', note:'SS with Straight Bar Curls', tempo:'controlled', rpeTarget:'9', superset:true, ssGroup:'d3Css1' },
+      { id:'d3Ce4a', name:'Preacher Curls',             type:'acc',  defaultSets:2, repMin:8,  repMax:10, rest:'ss',      note:'Peak contraction focus', tempo:'controlled', rpeTarget:'9', superset:true, ssGroup:'d3Css2' },
+      { id:'d3Ce4b', name:'Dips or Dip Machine',        type:'acc',  defaultSets:2, repMin:8,  repMax:10, rest:'lateral', note:'SS with Preacher Curls. Heavy tricep', tempo:'controlled', rpeTarget:'9', superset:true, ssGroup:'d3Css2' },
+      { id:'d3Ce5a', name:'Lateral Raises',             type:'acc',  defaultSets:2, repMin:12, repMax:15, rest:'ss',      note:'Chase the pump', tempo:'controlled', rpeTarget:'8', superset:true, ssGroup:'d3Css3' },
+      { id:'d3Ce5b', name:'Face Pulls',                 type:'acc',  defaultSets:2, repMin:12, repMax:15, rest:'lateral', note:'SS with Lateral Raises', tempo:'controlled', rpeTarget:'8', superset:true, ssGroup:'d3Css3' },
+      { id:'d3e6',   name:'Seated Calf Raises',         type:'acc',  defaultSets:3, repMin:10, repMax:12, rest:'lateral', note:'Last set: drop 30%, rep to failure', tempo:'2:0:1:3', rpeTarget:'9' },
+      { id:'d3e7',   name:'Standing Calf Raises',       type:'acc',  defaultSets:3, repMin:8,  repMax:10, rest:'lateral', note:'Push the weight this week', tempo:'2:0:3:1', rpeTarget:'9' },
+    ]},
   },
   d4: {
-    name:'Push — Shoulder Focus', focus:'Shoulders · Chest · Triceps',
-    exercises: [
-      { id:'d4e1', name:'Weighted Dip',           type:'main', defaultSets:5, repMin:3,  repMax:5,  rest:'main',    note:'More upright torso — tricep emphasis.' },
-      { id:'d4e2', name:'DB Lateral Raise',       type:'acc',  defaultSets:6, repMin:18, repMax:25, rest:'lateral', note:'Centerpiece. 6 sets. Screaming by set 4.' },
-      { id:'d4e3', name:'Cable Y-Raise',          type:'acc',  defaultSets:4, repMin:15, repMax:20, rest:'iso',     note:'Low cable, Y shape. Light weight only.' },
-      { id:'d4e4', name:'DB Shoulder Press',      type:'acc',  defaultSets:4, repMin:12, repMax:15, rest:'acc',     note:'Moderate weight. Activation over load.' },
-      { id:'d4e5', name:'Incline DB Press',       type:'acc',  defaultSets:4, repMin:12, repMax:15, rest:'acc',     note:'Upper chest. Different angle from Day 01.' },
-      { id:'d4e6', name:'Skull Crusher',          type:'acc',  defaultSets:4, repMin:12, repMax:15, rest:'iso',     note:'Arms angled back for constant tension.' },
-      { id:'d4e7', name:'Tricep Pushdown (bar)',  type:'acc',  defaultSets:3, repMin:15, repMax:20, rest:'lateral', note:'Pump finisher. Elbows pinned.' },
-    ],
+    name: 'Upper B — Hypertrophy', focus: 'Chest · Back · Rear Delts',
+    warmup: '5 min cardio + band pull-aparts 2×15 + dislocations 2×10',
+    varA: { exercises: [
+      { id:'d4Ae1a', name:'Incline HS Press',               type:'main', defaultSets:4, repMin:8,  repMax:10, rest:'ss',      note:'Antagonist superset — no strength loss', tempo:'2:0:1:0', rpeTarget:'8–9', superset:true, ssGroup:'d4Ass1' },
+      { id:'d4Ae1b', name:'High Cable Rows',                 type:'main', defaultSets:4, repMin:8,  repMax:10, rest:'acc',     note:'SS with Incline HS Press — antagonist pair', tempo:'2:0:1:0', rpeTarget:'8–9', superset:true, ssGroup:'d4Ass1' },
+      { id:'d4e2',   name:'High Cable Pec Flies',            type:'acc',  defaultSets:3, repMin:12, repMax:15, rest:'acc',     note:'Arms straight, full ROM, squeeze', tempo:'3:1:1:1', rpeTarget:'8' },
+      { id:'d4e3',   name:'HS Low Row',                      type:'acc',  defaultSets:3, repMin:10, repMax:12, rest:'acc',     note:'Lean 45°, pull through elbow', tempo:'2:0:1:1', rpeTarget:'8–9' },
+      { id:'d4e4',   name:'Neutral Grip Seated Cable Rows',  type:'acc',  defaultSets:3, repMin:8,  repMax:10, rest:'acc',     note:'Full lat stretch, hold the squeeze', tempo:'2:0:1:0', rpeTarget:'8' },
+      { id:'d4e5',   name:'Machine Rear Delt Flies',         type:'acc',  defaultSets:3, repMin:10, repMax:12, rest:'lateral', note:'Protract scapula, pull to ears', tempo:'3:1:1:1', rpeTarget:'8' },
+      { id:'d4e6',   name:'Straight Bar Lat Pullovers',      type:'acc',  defaultSets:2, repMin:12, repMax:15, rest:'lateral', note:'Step back, neutral spine, arms locked', tempo:'2:0:1:1', rpeTarget:'7–8' },
+    ]},
+    varB: { exercises: [
+      { id:'d4Be1a', name:'Incline HS Press',               type:'main', defaultSets:4, repMin:10, repMax:12, rest:'ss',      note:'Higher reps, more volume. SS with rows', tempo:'2:0:1:0', rpeTarget:'9', superset:true, ssGroup:'d4Bss1' },
+      { id:'d4Be1b', name:'HS Stepped Back Rows',           type:'main', defaultSets:4, repMin:10, repMax:12, rest:'acc',     note:'SS with Incline HS Press', tempo:'2:0:1:0', rpeTarget:'9', superset:true, ssGroup:'d4Bss1' },
+      { id:'d4Be2',  name:'Low Cable Pec Flies',            type:'acc',  defaultSets:3, repMin:12, repMax:15, rest:'acc',     note:'Low-to-high angle — upper chest emphasis', tempo:'3:1:1:1', rpeTarget:'8' },
+      { id:'d4Be3',  name:'Wide Grip Lat Pulldowns',        type:'acc',  defaultSets:3, repMin:8,  repMax:10, rest:'acc',     note:'Full stretch at top, squeeze at bottom', tempo:'3:1:1:1', rpeTarget:'9' },
+      { id:'d4Be4',  name:'Single Arm DB Row',              type:'acc',  defaultSets:3, repMin:10, repMax:12, rest:'acc',     note:'Unilateral — fix imbalances', tempo:'2:0:1:0', rpeTarget:'8–9' },
+      { id:'d4Be5a', name:'Rear Delt Rows',                 type:'acc',  defaultSets:3, repMin:12, repMax:15, rest:'ss',      note:'Rear delt superset', tempo:'controlled', rpeTarget:'8', superset:true, ssGroup:'d4Bss2' },
+      { id:'d4Be5b', name:'Band Pull-Aparts',               type:'acc',  defaultSets:3, repMin:12, repMax:15, rest:'lateral', note:'SS with Rear Delt Rows', tempo:'controlled', rpeTarget:'8', superset:true, ssGroup:'d4Bss2' },
+      { id:'d4Be6',  name:'Cable Pullovers',                type:'acc',  defaultSets:2, repMin:12, repMax:15, rest:'lateral', note:'Constant tension vs straight bar', tempo:'2:0:1:1', rpeTarget:'8' },
+    ]},
+    varC: { exercises: [
+      { id:'d4Ce1a', name:'Incline HS Press',               type:'main', defaultSets:4, repMin:6,  repMax:8,  rest:'ss',      note:'Peak week — heavier than usual. SS with rows', tempo:'2:0:1:0', rpeTarget:'9.5', superset:true, ssGroup:'d4Css1' },
+      { id:'d4Ce1b', name:'High Cable Rows',                type:'main', defaultSets:4, repMin:6,  repMax:8,  rest:'acc',     note:'SS with Incline HS Press', tempo:'2:0:1:0', rpeTarget:'9.5', superset:true, ssGroup:'d4Css1' },
+      { id:'d4e2',   name:'High Cable Pec Flies',           type:'acc',  defaultSets:3, repMin:10, repMax:12, rest:'acc',     note:'Push intensity', tempo:'3:1:1:1', rpeTarget:'9' },
+      { id:'d4e3',   name:'HS Low Row',                     type:'acc',  defaultSets:3, repMin:8,  repMax:10, rest:'acc',     note:'Heaviest row of the mesocycle', tempo:'2:0:1:1', rpeTarget:'9.5' },
+      { id:'d4e4',   name:'Neutral Grip Seated Cable Rows', type:'acc',  defaultSets:3, repMin:8,  repMax:10, rest:'acc',     note:'Last set: drop 30%, rep to failure', tempo:'2:0:1:0', rpeTarget:'9' },
+      { id:'d4e5',   name:'Machine Rear Delt Flies',        type:'acc',  defaultSets:3, repMin:10, repMax:12, rest:'lateral', note:'Push the weight', tempo:'3:1:1:1', rpeTarget:'9' },
+      { id:'d4e6',   name:'Straight Bar Lat Pullovers',     type:'acc',  defaultSets:2, repMin:10, repMax:12, rest:'lateral', note:'Controlled, focus on stretch', tempo:'2:0:1:1', rpeTarget:'8' },
+    ]},
   },
   d5: {
-    name:'Pull — Hamstring Combo', focus:'Back · Hamstrings · Biceps',
-    exercises: [
-      { id:'d5e1', name:'Weighted Chin-Up',       type:'main', defaultSets:5, repMin:3,  repMax:5,  rest:'main',    note:'Full reset at bottom each set.' },
-      { id:'d5e2', name:'Romanian Deadlift',      type:'acc',  defaultSets:4, repMin:12, repMax:15, rest:'rdl',     note:'Feel the hamstring, not the lower back.' },
-      { id:'d5e3', name:'Seated Leg Curl',        type:'acc',  defaultSets:5, repMin:12, repMax:15, rest:'iso',     note:'Hits hamstring short head. Slow eccentric.' },
-      { id:'d5e4', name:'Single Arm Cable Row',   type:'acc',  defaultSets:4, repMin:12, repMax:15, rest:'lateral', note:'Full lat stretch each rep.' },
-      { id:'d5e5', name:'Chest Supported Row',    type:'acc',  defaultSets:4, repMin:12, repMax:15, rest:'iso',     note:'Incline bench DBs. Pure mid-back.' },
-      { id:'d5e6', name:'Hammer Curl',            type:'acc',  defaultSets:4, repMin:12, repMax:15, rest:'iso',     note:'Neutral grip. Brachialis emphasis.' },
-      { id:'d5e7', name:'Incline DB Curl',        type:'acc',  defaultSets:3, repMin:12, repMax:15, rest:'lateral', note:'Long head stretch. Arms behind body.' },
-    ],
+    name: 'Lower B — Posterior', focus: 'Glutes · Hamstrings · Quads · Calves',
+    warmup: '5 min bike + BW lunges 2×12',
+    varA: { exercises: [
+      { id:'d5e1',   name:'Hip Abductors',                    type:'acc',  defaultSets:2, repMin:12, repMax:15, rest:'lateral', note:'Valgus correction — hold at top', tempo:'2:0:1:2', rpeTarget:'7' },
+      { id:'d5e2',   name:'Romanian Deadlifts (DB)',          type:'main', defaultSets:4, repMin:8,  repMax:10, rest:'heavy',   note:'Hip hinge, slight knee bend, neutral spine', tempo:'2:0:1:0', rpeTarget:'8–9' },
+      { id:'d5Ae3',  name:'DB Bulgarian Split Squats',        type:'acc',  defaultSets:3, repMin:8,  repMax:10, rest:'acc',     note:'DB at chest, slow descent, stability matters (per leg)', tempo:'2:0:1:0', rpeTarget:'8–9' },
+      { id:'d5e4',   name:'Weighted Hyperextensions',         type:'acc',  defaultSets:3, repMin:10, repMax:12, rest:'acc',     note:"Hold plate at chest, squeeze glutes at top, don't hyperextend", tempo:'2:0:1:1', rpeTarget:'8' },
+      { id:'d5e5',   name:'Leg Press (high/wide)',            type:'acc',  defaultSets:3, repMin:10, repMax:12, rest:'acc',     note:'High wide feet = glutes/hams over quads', tempo:'2:0:1:0', rpeTarget:'8' },
+      { id:'d5e6',   name:'Standing Calf Raises',             type:'acc',  defaultSets:3, repMin:8,  repMax:10, rest:'lateral', note:'Full stretch, 3-sec hold, slow eccentric', tempo:'2:0:3:1', rpeTarget:'8' },
+      { id:'d5e7',   name:'Ab Movement of Choice',            type:'acc',  defaultSets:2, repMin:10, repMax:12, rest:'lateral', note:'Cable crunch, hanging knee raise, etc.', tempo:'controlled', rpeTarget:'8' },
+    ]},
+    varB: { exercises: [
+      { id:'d5e1',   name:'Hip Abductors',                    type:'acc',  defaultSets:2, repMin:12, repMax:15, rest:'lateral', note:'Valgus correction', tempo:'2:0:1:2', rpeTarget:'7' },
+      { id:'d5Be2',  name:'Romanian Deadlifts (BB)',          type:'main', defaultSets:4, repMin:6,  repMax:8,  rest:'heavy',   note:'Barbell — heavier than DB variation', tempo:'2:0:1:0', rpeTarget:'9' },
+      { id:'d5Be3',  name:'Reverse Lunges (DB)',              type:'acc',  defaultSets:3, repMin:10, repMax:12, rest:'acc',     note:'Step back, not forward — less knee stress (per leg)', tempo:'2:0:1:0', rpeTarget:'8' },
+      { id:'d5e4',   name:'Weighted Hyperextensions',         type:'acc',  defaultSets:3, repMin:8,  repMax:10, rest:'acc',     note:'Heavier plate, push the weight', tempo:'2:0:1:1', rpeTarget:'9' },
+      { id:'d5Be5',  name:'Single Leg Leg Press',             type:'acc',  defaultSets:3, repMin:10, repMax:12, rest:'acc',     note:'Unilateral — addresses imbalances (per leg)', tempo:'2:0:1:0', rpeTarget:'8' },
+      { id:'d5e6',   name:'Standing Calf Raises',             type:'acc',  defaultSets:3, repMin:10, repMax:12, rest:'lateral', note:'Higher reps this variation', tempo:'2:0:3:1', rpeTarget:'8' },
+      { id:'d5Be7',  name:'Hanging Knee Raises',              type:'acc',  defaultSets:2, repMin:10, repMax:12, rest:'lateral', note:'Control the swing', tempo:'controlled', rpeTarget:'8' },
+    ]},
+    varC: { exercises: [
+      { id:'d5e1',   name:'Hip Abductors',                    type:'acc',  defaultSets:2, repMin:15, repMax:20, rest:'lateral', note:'Higher reps, blood flow', tempo:'2:0:1:2', rpeTarget:'7' },
+      { id:'d5e2',   name:'Romanian Deadlifts (DB)',          type:'main', defaultSets:4, repMin:6,  repMax:8,  rest:'heavy',   note:'Peak week — heaviest RDLs', tempo:'2:0:1:0', rpeTarget:'9.5' },
+      { id:'d5Ae3',  name:'DB Bulgarian Split Squats',        type:'acc',  defaultSets:3, repMin:6,  repMax:8,  rest:'acc',     note:'Heavier, lower reps (per leg)', tempo:'2:0:1:0', rpeTarget:'9.5' },
+      { id:'d5Ce4',  name:'Weighted Hyperextensions (pause)', type:'acc',  defaultSets:3, repMin:8,  repMax:10, rest:'acc',     note:'2-sec pause at top — brutal', tempo:'2:2:1:1', rpeTarget:'9' },
+      { id:'d5e5',   name:'Leg Press (high/wide)',            type:'acc',  defaultSets:3, repMin:8,  repMax:10, rest:'acc',     note:'Heavier than Var A', tempo:'2:0:1:0', rpeTarget:'9' },
+      { id:'d5e6',   name:'Standing Calf Raises',             type:'acc',  defaultSets:3, repMin:8,  repMax:10, rest:'lateral', note:'Last set: drop 30%, to failure', tempo:'2:0:3:1', rpeTarget:'9' },
+      { id:'d5Ce7',  name:'Cable Crunches',                   type:'acc',  defaultSets:2, repMin:10, repMax:12, rest:'lateral', note:'Controlled — feel the abs', tempo:'controlled', rpeTarget:'8' },
+    ]},
   },
 };
 
-const PROGRAM_B = {
-  d1: {
-    name:'Push — Chest Focus', focus:'Chest · Triceps · Shoulders',
-    exercises: [
-      { id:'d1e1', name:'Weighted Dip',                  type:'main', defaultSets:5, repMin:3,  repMax:5,  rest:'main',    note:'Forward lean for chest. Stop 1–2 reps shy of failure.' },
-      { id:'d1e2', name:'Hammer Strength Incline Press', type:'acc',  defaultSets:5, repMin:12, repMax:15, rest:'acc',     note:'Load plates. Easier to push weight.' },
-      { id:'d1e3', name:'Pec Deck / Machine Fly',        type:'acc',  defaultSets:4, repMin:15, repMax:20, rest:'iso',     note:'Seat-based full ROM. Squeeze the contraction.' },
-      { id:'d1e4', name:'Machine Lateral Raise',         type:'acc',  defaultSets:5, repMin:18, repMax:25, rest:'lateral', note:'Guided arc. Same pump intent as DB raises.' },
-      { id:'d1e5', name:'Cable Lateral Raise',           type:'acc',  defaultSets:4, repMin:15, repMax:20, rest:'lateral', note:'Unilateral. Keep tension on the delt.' },
-      { id:'d1e6', name:'Cable Overhead Tricep Ext',     type:'acc',  defaultSets:4, repMin:15, repMax:20, rest:'lateral', note:'Rope or single handle. Long head priority.' },
-      { id:'d1e7', name:'Cable Skull Crusher',           type:'acc',  defaultSets:4, repMin:12, repMax:15, rest:'iso',     note:'EZ bar attachment. Easier on elbows.' },
-    ],
-  },
-  d2: {
-    name:'Pull — Back Focus', focus:'Lats · Mid-Back · Biceps · Rear Delts',
-    exercises: [
-      { id:'d2e1', name:'Weighted Chin-Up',         type:'main', defaultSets:5, repMin:3,  repMax:5,  rest:'main',    note:'Dead hang. Full chin over bar. No kipping.' },
-      { id:'d2e2', name:'V-Bar Pulldown',           type:'acc',  defaultSets:5, repMin:12, repMax:15, rest:'acc',     note:'Neutral grip. More bicep involvement than wide grip.' },
-      { id:'d2e3', name:'Chest Supported DB Row',   type:'acc',  defaultSets:4, repMin:12, repMax:15, rest:'iso',     note:'Lower back removed. Pure mid-back.' },
-      { id:'d2e4', name:'DB or Cable Pullover',     type:'acc',  defaultSets:4, repMin:15, repMax:20, rest:'lateral', note:'Full lat stretch. Arms nearly straight throughout.' },
-      { id:'d2e5', name:'Reverse Pec Deck',         type:'acc',  defaultSets:4, repMin:20, repMax:25, rest:'lateral', note:'Rear delt isolation. Light weight, feel the squeeze.' },
-      { id:'d2e6', name:'Preacher Curl',            type:'acc',  defaultSets:4, repMin:12, repMax:15, rest:'iso',     note:'Removes cheating. Full peak contraction every rep.' },
-      { id:'d2e7', name:'Cable Curl',               type:'acc',  defaultSets:4, repMin:15, repMax:20, rest:'lateral', note:'Constant tension. Pump finisher.' },
-    ],
-  },
-  d3: {
-    name:'Legs', focus:'Quads · Glutes · Hamstrings · Calves',
-    exercises: [
-      { id:'d3e1', name:'Bulgarian Split Squat',  type:'main', defaultSets:5, repMin:3,  repMax:5,  rest:'main',    note:"Note imbalances — don't compensate, fix them." },
-      { id:'d3e2', name:'Hack Squat',             type:'acc',  defaultSets:5, repMin:15, repMax:20, rest:'acc',     note:'Deep range of motion. Brutal quad isolation.' },
-      { id:'d3e3', name:'Single Leg Extension',   type:'acc',  defaultSets:5, repMin:18, repMax:25, rest:'iso',     note:'Per leg. Fixes quad imbalances.' },
-      { id:'d3e4', name:'Seated Leg Curl',        type:'acc',  defaultSets:4, repMin:12, repMax:15, rest:'iso',     note:'Hits hamstring short head.' },
-      { id:'d3e5', name:'Cable Pull Through',     type:'acc',  defaultSets:4, repMin:15, repMax:20, rest:'acc',     note:'Constant tension glute drive. Hinge pattern.' },
-      { id:'d3e6', name:'Seated Calf Raise',      type:'acc',  defaultSets:5, repMin:20, repMax:25, rest:'iso',     note:'Hits soleus. Slow eccentric.' },
-    ],
-  },
-  d4: {
-    name:'Push — Shoulder Focus', focus:'Shoulders · Chest · Triceps',
-    exercises: [
-      { id:'d4e1', name:'Weighted Dip',                   type:'main', defaultSets:5, repMin:3,  repMax:5,  rest:'main',    note:'More upright torso — tricep emphasis.' },
-      { id:'d4e2', name:'Cable Lateral Raise',            type:'acc',  defaultSets:6, repMin:18, repMax:25, rest:'lateral', note:'Constant tension. 6 sets. Screaming by set 4.' },
-      { id:'d4e3', name:'Cable Y-Raise',                  type:'acc',  defaultSets:4, repMin:15, repMax:20, rest:'iso',     note:'Low cable, Y shape. Light weight only.' },
-      { id:'d4e4', name:'Hammer Strength Shoulder Press', type:'acc',  defaultSets:4, repMin:12, repMax:15, rest:'acc',     note:'Machine. Easier to push through full range.' },
-      { id:'d4e5', name:'Cable Crossover (High to Low)',  type:'acc',  defaultSets:4, repMin:15, repMax:20, rest:'iso',     note:'Lower chest emphasis. Squeeze at the cross.' },
-      { id:'d4e6', name:'Cable Skull Crusher',            type:'acc',  defaultSets:4, repMin:12, repMax:15, rest:'lateral', note:'Constant tension. Easier on elbows.' },
-      { id:'d4e7', name:'Tricep Pushdown (bar)',          type:'acc',  defaultSets:3, repMin:15, repMax:20, rest:'lateral', note:'Pump finisher. Elbows pinned.' },
-    ],
-  },
-  d5: {
-    name:'Pull — Hamstring Combo', focus:'Back · Hamstrings · Biceps',
-    exercises: [
-      { id:'d5e1', name:'Weighted Chin-Up',       type:'main', defaultSets:5, repMin:3,  repMax:5,  rest:'main',    note:'Full reset at bottom each set.' },
-      { id:'d5e2', name:'Stiff Leg Deadlift',     type:'acc',  defaultSets:4, repMin:12, repMax:15, rest:'rdl',     note:'Legs straighter than RDL. More hamstring length.' },
-      { id:'d5e3', name:'Single Leg Curl',        type:'acc',  defaultSets:5, repMin:12, repMax:15, rest:'iso',     note:'Per leg. Addresses imbalances.' },
-      { id:'d5e4', name:'Hammer Strength Row',    type:'acc',  defaultSets:4, repMin:12, repMax:15, rest:'lateral', note:'Plate loaded machine. Different feel from cable row.' },
-      { id:'d5e5', name:'Seal Row',               type:'acc',  defaultSets:4, repMin:12, repMax:15, rest:'iso',     note:'Lying on bench with DBs. Strictest row variation.' },
-      { id:'d5e6', name:'Cross Body Hammer Curl', type:'acc',  defaultSets:4, repMin:12, repMax:15, rest:'iso',     note:'Across the body. Brachialis emphasis.' },
-      { id:'d5e7', name:'Incline DB Curl',        type:'acc',  defaultSets:3, repMin:12, repMax:15, rest:'lateral', note:'Long head stretch. Arms behind body.' },
-    ],
-  },
-};
-
-// Preset alternatives by slot id. Same slot id across A and B uses the same options.
 const ALTERNATIVES = {
-  // Mains (heavy compound slot)
-  d1e1: ['Weighted Dip','Dip Machine','BB Bench Press','DB Bench Press','Hammer Strength Bench Press','Smith Bench Press','Machine Chest Press','Bench Dip'],
-  d2e1: ['Weighted Chin-Up','Weighted Pull-Up','Neutral-Grip Pull-Up','Heavy Lat Pulldown','Pendlay Row','BB Row','Assisted Pull-Up'],
-  d3e1: ['Bulgarian Split Squat','V-Squat','Back Squat','Front Squat','Hack Squat (heavy)','Smith Squat','Walking Lunge (DB)','Trap Bar Deadlift','Goblet Squat'],
-  d4e1: ['Weighted Dip','Dip Machine','BB Bench Press','DB Bench Press','Hammer Strength Bench Press','Smith Bench Press','Close-Grip Bench Press'],
-  d5e1: ['Weighted Chin-Up','Weighted Pull-Up','Neutral-Grip Pull-Up','Heavy Lat Pulldown','Pendlay Row','BB Row'],
-  // Day 1
-  d1e2: ['Incline DB Press','Hammer Strength Incline Press','Smith Incline Press','Incline BB Press','Machine Chest Press'],
-  d1e3: ['Cable Fly (Low to High)','Pec Deck / Machine Fly','DB Fly','Cable Crossover','Pec Deck'],
-  d1e4: ['DB Lateral Raise','Cable Lateral Raise','Machine Lateral Raise','Lean-Away DB Lateral'],
-  d1e5: ['Cable Lateral Raise','DB Lateral Raise','Machine Lateral Raise','Y-Raise'],
-  d1e6: ['Tricep Rope Pushdown','Bar Pushdown','Cable Overhead Tricep Ext','Single-Arm Pushdown'],
-  d1e7: ['Overhead Tricep Extension','Cable Skull Crusher','Skull Crusher','Lying Tricep Ext','Cable Overhead Tricep Ext'],
-  // Day 2
-  d2e2: ['Lat Pulldown','V-Bar Pulldown','Wide-Grip Pulldown','Cable Pullover','Single-Arm Pulldown'],
-  d2e3: ['Seated Cable Row','Chest Supported DB Row','Hammer Strength Row','T-Bar Row','Pendlay Row'],
-  d2e4: ['Straight Arm Pulldown','DB Pullover','Cable Pullover'],
-  d2e5: ['Face Pull','Reverse Pec Deck','Rear Delt Cable Fly','Bent-over DB Reverse Fly'],
-  d2e6: ['DB Curl','Hammer Curl','Preacher Curl','EZ Bar Curl','Incline DB Curl'],
-  d2e7: ['Cable Curl','DB Curl','Hammer Curl','Preacher Curl'],
-  // Day 3
-  d3e2: ['Leg Press','Hack Squat','Back Squat','Front Squat','Bulgarian Split Squat'],
-  d3e3: ['Leg Extension','Single Leg Extension','Sissy Squat'],
-  d3e4: ['Lying Leg Curl','Seated Leg Curl','Single Leg Curl','Nordic Curl'],
-  d3e5: ['Hip Thrust','Cable Pull Through','Glute Bridge','45° Hyperextension'],
-  d3e6: ['Standing Calf Raise','Seated Calf Raise','Smith Calf Raise','Donkey Calf Raise','Leg Press Calf Raise'],
-  // Day 4
-  d4e2: ['DB Lateral Raise','Cable Lateral Raise','Machine Lateral Raise'],
-  d4e3: ['Cable Y-Raise','Reverse Pec Deck','Rear Delt Fly','Face Pull'],
-  d4e4: ['DB Shoulder Press','Hammer Strength Shoulder Press','Machine Shoulder Press','Smith OHP','Seated BB OHP'],
-  d4e5: ['Incline DB Press','Hammer Strength Incline Press','Smith Incline','Cable Crossover'],
-  d4e6: ['Skull Crusher','Cable Skull Crusher','Lying Tricep Ext','Overhead Tricep Ext'],
-  d4e7: ['Tricep Pushdown (bar)','Rope Pushdown','Single-Arm Pushdown','Cable Skull Crusher'],
-  // Day 5
-  d5e2: ['Romanian Deadlift','Stiff Leg Deadlift','Cable Pull Through','Good Morning'],
-  d5e3: ['Seated Leg Curl','Lying Leg Curl','Single Leg Curl'],
-  d5e4: ['Single Arm Cable Row','Hammer Strength Row','Seal Row','Chest Supported Row'],
-  d5e5: ['Chest Supported Row','DB Row','Seal Row','Pendlay Row','T-Bar Row'],
-  d5e6: ['Hammer Curl','DB Curl','Cross Body Hammer Curl'],
-  d5e7: ['Incline DB Curl','DB Curl','Cable Curl','Hammer Curl'],
+  d1e1:   ['Incline Hammer Strength Press','Incline DB Press','Incline BB Press','Smith Incline Press','Machine Chest Press'],
+  d1e2:   ['HS Stepped Back Rows','HS Low Row','Pendlay Row','BB Row','Chest Supported Row'],
+  d1Be2:  ['HS Low Row','HS Stepped Back Rows','Pendlay Row','T-Bar Row'],
+  d2e2:   ['V-Bar Lever Squat','Hack Squat','Leg Press','Back Squat','Front Squat','Goblet Squat'],
+  d2Be3:  ['Trap Bar Deadlift','Romanian Deadlift','Conventional Deadlift','Rack Pull'],
+  d3e1:   ['HS Shoulder Press','DB Shoulder Press','DB Arnold Press','Machine Shoulder Press','Seated BB OHP'],
+  d4Ae1a: ['Incline HS Press','Incline DB Press','DB Bench Press','Machine Chest Press'],
+  d4Ae1b: ['High Cable Rows','Seated Cable Row','HS Low Row','Chest Supported Row'],
+  d4Be1a: ['Incline HS Press','Incline DB Press','DB Bench Press','Machine Chest Press'],
+  d4Be1b: ['HS Stepped Back Rows','HS Low Row','Pendlay Row','BB Row'],
+  d4Ce1a: ['Incline HS Press','Incline DB Press','DB Bench Press'],
+  d4Ce1b: ['High Cable Rows','Seated Cable Row','HS Low Row'],
+  d5e2:   ['Romanian Deadlifts (DB)','DB RDL','Single-Leg RDL','Cable Pull Through','Good Morning'],
+  d5Be2:  ['Romanian Deadlifts (BB)','DB RDL','Conventional Deadlift','Rack Pull'],
 };
 
 /* ============================ EXERCISE LIBRARY ============================ */
@@ -1540,14 +1562,20 @@ const TYPE_STYLES = {
 };
 
 /* ============================ HELPERS ============================ */
-const getCycleWeek  = (w) => ((w % 5) + 5) % 5;
-const getCycleNum   = (w) => Math.floor(w / 5) + 1;
-const isDeloadWeek  = (w) => getCycleWeek(w) === 4;
-const isAWeek       = (w) => { const cw = getCycleWeek(w); return cw === 0 || cw === 2; };
-const getProgram    = (w) => isAWeek(w) ? PROGRAM_A : PROGRAM_B;
-const getMainScheme = (w) => [5, 4, 3, 5][w % 4];
-const getWeekLabel  = (w) => ['A1','B1','A2','B2','DELOAD'][getCycleWeek(w)];
-const getWeekRepStr = (w) => isDeloadWeek(w) ? 'DELOAD' : `${getMainScheme(w)}s`;
+const getCycleWeek  = (w) => ((w % 6) + 6) % 6;
+const getCycleNum   = (w) => Math.floor(w / 6) + 1;
+const isDeloadWeek  = (w) => getCycleWeek(w) === 5;
+const getVariation  = (w) => ['varA','varB','varA','varB','varC','varA'][getCycleWeek(w)];
+const getProgram    = (w) => {
+  const v = getVariation(w);
+  const result = {};
+  for (const [dayId, day] of Object.entries(PROGRAM)) {
+    result[dayId] = { name: day.name, focus: day.focus, exercises: day[v].exercises };
+  }
+  return result;
+};
+const getWeekLabel  = (w) => ['WK1','WK2','WK3','WK4','PEAK','DELOAD'][getCycleWeek(w)];
+const getWeekRepStr = (w) => ['Var A','Var B','Var A','Var B','Peak','Deload'][getCycleWeek(w)];
 
 const todayStr = () => {
   const d = new Date();
@@ -1560,6 +1588,33 @@ const todayStr = () => {
 const fmtDate = (s) => {
   const [y,m,d] = s.split('-');
   return `${m}/${d}`;
+};
+
+const fmtWeekRange = (mondayStr) => {
+  const mon = new Date(mondayStr + 'T00:00:00');
+  const sun = new Date(mon);
+  sun.setDate(mon.getDate() + 6);
+  const mo = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const mStr = `${mo[mon.getMonth()]} ${mon.getDate()}`;
+  const sStr = mon.getMonth() === sun.getMonth() ? `${sun.getDate()}` : `${mo[sun.getMonth()]} ${sun.getDate()}`;
+  return `${mStr}–${sStr}`;
+};
+
+const calcWeeklyAvgs = (entries) => {
+  if (!entries.length) return [];
+  const buckets = {};
+  for (const [d, v] of entries) {
+    const dt = new Date(d + 'T00:00:00');
+    const dow = dt.getDay();
+    const mon = new Date(dt);
+    mon.setDate(dt.getDate() - ((dow + 6) % 7));
+    const key = mon.toISOString().slice(0, 10);
+    if (!buckets[key]) buckets[key] = [];
+    buckets[key].push(v);
+  }
+  return Object.entries(buckets)
+    .map(([k, vs]) => ({ monday: k, avg: vs.reduce((a, b) => a + b, 0) / vs.length, count: vs.length }))
+    .sort((a, b) => a.monday.localeCompare(b.monday));
 };
 
 const fmtMMSS = (ms) => {
@@ -1761,6 +1816,7 @@ const initData = () => ({
   currentWeek: 0,
   sessions: {},
   bodyweight: {},
+  steps: {},
   swaps: {},
   runHistory: {
     w0r1: { complete: true, date: '2026-04-25', actualDuration: 30, actualPace: '5.0', actualHR: 169, maxHR: 179, rpe: 9, notes: 'Aerobic base deconditioned. 5.0 mph = threshold effort.' },
@@ -2174,7 +2230,8 @@ function ExerciseBlock({ exercise, history, week, weekDeload, sessionEntry, onUp
   // build target
   const target = useMemo(() => {
     if (weekDeload) return computeDeloadTarget(history, exId);
-    if (exercise.type === 'main') return computeMainTarget(history, exId, getMainScheme(week));
+    const midRep = Math.round((exercise.repMin + exercise.repMax) / 2);
+    if (exercise.type === 'main') return computeMainTarget(history, exId, midRep);
     return computeAccTarget(history, exId, exercise.repMin, exercise.repMax, exercise.defaultSets);
   }, [history, exId, week, weekDeload, exercise]);
 
@@ -2216,9 +2273,7 @@ function ExerciseBlock({ exercise, history, week, weekDeload, sessionEntry, onUp
   const addSet = () => onUpdate([...sets, { weight: '', reps: '', rpe: '', done: false }]);
   const removeSet = () => sets.length > 1 && onUpdate(sets.slice(0, -1));
 
-  const repStr = exercise.type === 'main'
-    ? (weekDeload ? `${exercise.repMin}–${exercise.repMax}` : `${getMainScheme(week)}`)
-    : `${exercise.repMin}–${exercise.repMax}`;
+  const repStr = `${exercise.repMin}–${exercise.repMax}`;
 
   // live timer
   const doneSets = sets.filter(s => s.done && s.doneAt);
@@ -2242,6 +2297,7 @@ function ExerciseBlock({ exercise, history, week, weekDeload, sessionEntry, onUp
           <div className="ex-name">{effective.name}</div>
           <div className="row" style={{ gap: 6, marginTop: 4 }}>
             <span className={`ex-badge ${exercise.type}`}>{exercise.type.toUpperCase()}</span>
+            {exercise.superset && <span className="ex-badge ss">SS</span>}
             {swap && <span className={`ex-badge ${swap.isCustom ? 'custom' : 'swap'}`}>{swap.isCustom ? 'CUSTOM' : 'SWAPPED'}</span>}
           </div>
         </div>
@@ -2268,6 +2324,12 @@ function ExerciseBlock({ exercise, history, week, weekDeload, sessionEntry, onUp
       )}
 
       {effective.note && <div className="ex-note">{effective.note}</div>}
+      {exercise.tempo && (
+        <div className="ex-tempo-row">
+          <span>TEMPO <b style={{color:'var(--text)'}}>{exercise.tempo}</b></span>
+          {exercise.rpeTarget && <span>TARGET RPE <b style={{color:'var(--text)'}}>{exercise.rpeTarget}</b></span>}
+        </div>
+      )}
 
       <div className="set-list">
         {sets.map((s, i) => (
@@ -2315,19 +2377,20 @@ function CycleIndicator({ week }) {
   const cw = getCycleWeek(week);
   const cycle = getCycleNum(week);
   const labels = [
-    {n:'A1', r:'5s'}, {n:'B1', r:'4s'}, {n:'A2', r:'3s'}, {n:'B2', r:'5s'}, {n:'DELOAD', r:'rpe 5-6'}
+    {n:'WK1', r:'Var A'}, {n:'WK2', r:'Var B'}, {n:'WK3', r:'Var A'},
+    {n:'WK4', r:'Var B'}, {n:'PEAK', r:'Var C'}, {n:'DELOAD', r:'Var A'},
   ];
   return (
     <div className="card elevated cycle-indicator">
       <div className="cycle-meta">
-        <div className="cycle-num">Cycle {String(cycle).padStart(2,'0')} · Week {cw + 1} of 5</div>
-        <div className={`week-pill ${cw === 4 ? 'deload' : ''}`}>{getWeekLabel(week)} · {getWeekRepStr(week)}</div>
+        <div className="cycle-num">Cycle {String(cycle).padStart(2,'0')} · Week {cw + 1} of 6</div>
+        <div className={`week-pill ${cw === 5 ? 'deload' : ''}`}>{getWeekLabel(week)} · {getWeekRepStr(week)}</div>
       </div>
-      <div className="cycle-week">{cw === 4 ? 'DELOAD WEEK' : labels[cw].n + ' · MAIN ' + labels[cw].r}</div>
+      <div className="cycle-week">{cw === 5 ? 'DELOAD WEEK' : labels[cw].n + ' · ' + labels[cw].r.toUpperCase()}</div>
       <div style={{ height: 14 }} />
       <div className="cycle-strip">
         {labels.map((l, i) => (
-          <div key={i} className={`cycle-strip-cell ${i === cw ? 'current' : ''} ${i < cw ? 'done' : ''} ${i === 4 ? 'deload' : ''}`}>
+          <div key={i} className={`cycle-strip-cell ${i === cw ? 'current' : ''} ${i < cw ? 'done' : ''} ${i === 5 ? 'deload' : ''}`}>
             <div className="cycle-strip-name">{l.n}</div>
             <div className="cycle-strip-reps">{l.r}</div>
           </div>
@@ -2337,7 +2400,7 @@ function CycleIndicator({ week }) {
   );
 }
 
-function DashboardView({ data, onSelectDay, onAdvanceWeek, onResetWeek }) {
+function DashboardView({ data, onSelectDay, onAdvanceWeek, onResetWeek, onResetProgram }) {
   const currentWeek = data.currentWeek;
   const [viewWeek, setViewWeek] = useState(currentWeek);
   const isPreview = viewWeek !== currentWeek;
@@ -2421,7 +2484,6 @@ function DashboardView({ data, onSelectDay, onAdvanceWeek, onResetWeek }) {
           <div className="section-label">Recent</div>
           <div className="recent-list">
             {recent.map((h, i) => {
-              const exMap = {...PROGRAM_A, ...PROGRAM_B};
               const dayLabel = h.sessionKey ? h.sessionKey.split('_')[1].toUpperCase() : '';
               return (
                 <div key={i} className="recent-item">
@@ -2447,9 +2509,10 @@ function DashboardView({ data, onSelectDay, onAdvanceWeek, onResetWeek }) {
       )}
 
       <div className="section-label" style={{ marginTop: 22 }}>Settings</div>
-      <div className="card" style={{ display: 'flex', gap: 8 }}>
+      <div className="card" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <button className="btn btn-ghost" onClick={onResetWeek}>Reset This Week</button>
         <button className="btn btn-ghost" onClick={onAdvanceWeek}>Skip to Next Week</button>
+        <button className="btn btn-ghost" onClick={onResetProgram} style={{ borderColor: 'rgba(230,59,46,0.4)', color: 'var(--red)' }}>Restart Program</button>
       </div>
     </div>
   );
@@ -2580,67 +2643,165 @@ function SessionView({ data, week: weekProp, dayId, onBack, onSave }) {
   );
 }
 
-function BodyweightView({ data, onLog }) {
-  const [val, setVal] = useState('');
+function LogInput({ label, placeholder, step, min, max, onSubmit, existingVal, existingLabel }) {
   const today = todayStr();
-  const bw = data.bodyweight || {};
-  const entries = Object.entries(bw).sort((a,b) => a[0].localeCompare(b[0]));
-  const latest = entries[entries.length - 1];
-
+  const [val, setVal] = useState('');
+  const [date, setDate] = useState(today);
   const submit = () => {
     const n = parseFloat(val);
-    if (!n || n < 60 || n > 600) return;
-    onLog(today, n);
+    if (!n || n < min || n > max) return;
+    onSubmit(date, n);
     setVal('');
+    setDate(today);
+  };
+  return (
+    <div className="card bw-input-card">
+      <input
+        type="date" value={date} max={today} onChange={e => setDate(e.target.value)}
+        style={{ fontFamily:'DM Mono', fontSize:13, color:'var(--text)', background:'var(--card2)', border:'1px solid var(--dark)', borderRadius:8, padding:'8px 12px', width:'100%', marginBottom:10, colorScheme:'dark' }}
+      />
+      <div className="bw-input-row">
+        <input
+          className="bw-input-big mono" type="number" inputMode="decimal"
+          placeholder={placeholder} step={step}
+          value={val} onChange={e => setVal(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && submit()}
+        />
+        <button className="bw-log-btn" onClick={submit}>Log</button>
+      </div>
+      {existingVal != null && (
+        <div style={{ fontFamily:'DM Mono', fontSize:11, color:'var(--accent)', marginTop:8 }}>
+          ✓ already logged · {existingLabel} — logging will overwrite
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LogList({ entries, unit, decimals, editState, onStartEdit, onCommitEdit, onCancelEdit, onDelete, editMin, editMax, editStep }) {
+  const [editVal, setEditVal] = editState;
+  return (
+    <div className="recent-list">
+      {entries.slice(-14).reverse().map(([d, v]) => (
+        <div key={d} className="recent-item" style={{ alignItems:'center' }}>
+          {onStartEdit._editDate === d ? (
+            <>
+              <div className="recent-meta">{fmtDate(d)}</div>
+              <div style={{ display:'flex', gap:6, alignItems:'center', marginLeft:'auto' }}>
+                <input
+                  type="number" inputMode="decimal" step={editStep}
+                  value={editVal} onChange={e => setEditVal(e.target.value)}
+                  style={{ width:80, fontFamily:'DM Mono', fontSize:13, background:'var(--card2)', border:'1px solid var(--muted)', borderRadius:6, padding:'4px 8px', color:'var(--text)', colorScheme:'dark' }}
+                  autoFocus
+                  onKeyDown={e => { if(e.key==='Enter') onCommitEdit(d, editMin, editMax); if(e.key==='Escape') onCancelEdit(); }}
+                />
+                <button onClick={() => onCommitEdit(d, editMin, editMax)} style={{ fontFamily:'DM Mono', fontSize:11, background:'var(--accent)', color:'#111', border:'none', borderRadius:6, padding:'5px 10px', cursor:'pointer' }}>Save</button>
+                <button onClick={onCancelEdit} style={{ fontFamily:'DM Mono', fontSize:11, background:'transparent', color:'var(--muted)', border:'1px solid var(--dark)', borderRadius:6, padding:'5px 10px', cursor:'pointer' }}>✕</button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="recent-meta">{fmtDate(d)}</div>
+              <div style={{ display:'flex', gap:8, alignItems:'center', marginLeft:'auto' }}>
+                <div className="recent-volume mono">{decimals > 0 ? Number(v).toFixed(decimals) : Math.round(v).toLocaleString()}{unit}</div>
+                <button onClick={() => onStartEdit(d, v)} style={{ fontFamily:'DM Mono', fontSize:10, background:'transparent', color:'var(--muted)', border:'1px solid var(--dark)', borderRadius:5, padding:'3px 8px', cursor:'pointer' }}>edit</button>
+                <button onClick={() => onDelete(d)} style={{ fontFamily:'DM Mono', fontSize:10, background:'transparent', color:'var(--red)', border:'1px solid rgba(230,59,46,0.3)', borderRadius:5, padding:'3px 8px', cursor:'pointer' }}>del</button>
+              </div>
+            </>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function WeeklyAvgList({ weeklyAvgs, unit, decimals }) {
+  if (!weeklyAvgs.length) return null;
+  return (
+    <div className="recent-list">
+      {weeklyAvgs.slice(-8).reverse().map(({ monday, avg, count }, i, arr) => {
+        const prev = arr[i + 1];
+        const delta = prev ? avg - prev.avg : null;
+        return (
+          <div key={monday} className="recent-item" style={{ alignItems:'center' }}>
+            <div>
+              <div style={{ fontFamily:'DM Mono', fontSize:12, color:'var(--text)' }}>{fmtWeekRange(monday)}</div>
+              <div style={{ fontFamily:'DM Mono', fontSize:10, color:'var(--muted)', marginTop:2 }}>{count} day{count !== 1 ? 's' : ''} logged</div>
+            </div>
+            <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', marginLeft:'auto', gap:2 }}>
+              <div className="recent-volume mono">
+                {decimals > 0 ? avg.toFixed(decimals) : Math.round(avg).toLocaleString()}{unit}
+              </div>
+              {delta !== null && (
+                <div style={{ fontFamily:'DM Mono', fontSize:10, color: delta > 0 ? 'var(--red)' : delta < 0 ? '#4ade80' : 'var(--muted)' }}>
+                  {delta > 0 ? '+' : ''}{decimals > 0 ? delta.toFixed(decimals) : Math.round(delta).toLocaleString()}{unit}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function BodyweightView({ data, onLog, onLogSteps }) {
+  const today = todayStr();
+  const bw = data.bodyweight || {};
+  const st = data.steps || {};
+  const bwEntries = Object.entries(bw).sort((a, b) => a[0].localeCompare(b[0]));
+  const stEntries = Object.entries(st).sort((a, b) => a[0].localeCompare(b[0]));
+  const latest = bwEntries[bwEntries.length - 1];
+
+  // shared edit state — only one row editable at a time per section
+  const [bwEditDate, setBwEditDate] = useState(null);
+  const [bwEditVal, setBwEditVal] = useState('');
+  const [stEditDate, setStEditDate] = useState(null);
+  const [stEditVal, setStEditVal] = useState('');
+
+  const bwWeekly = useMemo(() => calcWeeklyAvgs(bwEntries), [bwEntries.length]);
+  const stWeekly = useMemo(() => calcWeeklyAvgs(stEntries), [stEntries.length]);
+
+  const thisWkBw  = bwWeekly[bwWeekly.length - 1]?.avg;
+  const lastWkBw  = bwWeekly[bwWeekly.length - 2]?.avg;
+  const bwDelta   = thisWkBw && lastWkBw ? thisWkBw - lastWkBw : null;
+  const thisWkSt  = stWeekly[stWeekly.length - 1]?.avg;
+  const lastWkSt  = stWeekly[stWeekly.length - 2]?.avg;
+  const stDelta   = thisWkSt && lastWkSt ? thisWkSt - lastWkSt : null;
+  const allMin    = bwEntries.length ? Math.min(...bwEntries.map(e => e[1])) : null;
+  const allMax    = bwEntries.length ? Math.max(...bwEntries.map(e => e[1])) : null;
+
+  const bwEditProxy = { _editDate: bwEditDate };
+  bwEditProxy.call = (d, v) => { setBwEditDate(d); setBwEditVal(String(v)); };
+  bwEditProxy._editDate = bwEditDate;
+
+  const deleteEntry = (store, d, onLogFn) => {
+    if (confirm(`Delete entry for ${fmtDate(d)}?`)) onLogFn(d, null);
+  };
+  const commitEdit = (d, min, max, val, onLogFn, setEdit) => {
+    const n = parseFloat(val);
+    if (n && n >= min && n <= max) onLogFn(d, n);
+    setEdit(null);
   };
 
-  // weekly averages
-  const weeklyAvgs = useMemo(() => {
-    if (!entries.length) return [];
-    const buckets = {};
-    for (const [d, v] of entries) {
-      const date = new Date(d);
-      const dayOfWeek = date.getDay(); // 0 = Sun
-      const monday = new Date(date);
-      monday.setDate(date.getDate() - ((dayOfWeek + 6) % 7));
-      const key = monday.toISOString().slice(0,10);
-      if (!buckets[key]) buckets[key] = [];
-      buckets[key].push(v);
-    }
-    return Object.entries(buckets).map(([k, vs]) => ({
-      week: k, avg: vs.reduce((a,b)=>a+b,0) / vs.length,
-    })).sort((a,b) => a.week.localeCompare(b.week));
-  }, [entries]);
-
-  const thisWeekAvg = weeklyAvgs[weeklyAvgs.length - 1]?.avg;
-  const lastWeekAvg = weeklyAvgs[weeklyAvgs.length - 2]?.avg;
-  const delta = thisWeekAvg && lastWeekAvg ? thisWeekAvg - lastWeekAvg : null;
-  const allMin = entries.length ? Math.min(...entries.map(e => e[1])) : null;
-  const allMax = entries.length ? Math.max(...entries.map(e => e[1])) : null;
+  // Adapter objects so LogList's onStartEdit.call pattern works
+  const bwStart = (d, v) => { setBwEditDate(d); setBwEditVal(String(v)); };
+  bwStart._editDate = bwEditDate;
+  const stStart = (d, v) => { setStEditDate(d); setStEditVal(String(v)); };
+  stStart._editDate = stEditDate;
 
   return (
     <div>
-      <div className="section-label">Today</div>
-      <div className="card bw-input-card">
-        <div style={{ fontFamily:'DM Mono', fontSize:11, color:'var(--muted)', letterSpacing:'0.12em' }}>
-          {today.toUpperCase()}
-        </div>
-        <div className="bw-input-row">
-          <input
-            className="bw-input-big mono"
-            type="number" inputMode="decimal" placeholder="lb" step="0.1"
-            value={val} onChange={e => setVal(e.target.value)}
-          />
-          <button className="bw-log-btn" onClick={submit}>Log</button>
-        </div>
-        {bw[today] && (
-          <div style={{ fontFamily:'DM Mono', fontSize:11, color:'var(--accent)', marginTop:8 }}>
-            ✓ logged · {bw[today]}lb
-          </div>
-        )}
-      </div>
+      {/* ── WEIGHT ── */}
+      <div className="section-label">Log Weigh-In</div>
+      <LogInput
+        placeholder="lb" step="0.1" min={60} max={600}
+        onSubmit={onLog}
+        existingVal={bw[todayStr()] != null ? bw[todayStr()] : null}
+        existingLabel={bw[todayStr()] + 'lb'}
+      />
 
-      {entries.length > 0 && (
+      {bwEntries.length > 0 && (
         <>
           <div className="bw-stat-grid">
             <div className="bw-stat">
@@ -2649,35 +2810,88 @@ function BodyweightView({ data, onLog }) {
               <div className="bw-stat-delta flat">{fmtDate(latest[0])}</div>
             </div>
             <div className="bw-stat">
-              <div className="bw-stat-label">Wk Avg</div>
-              <div className="bw-stat-val mono">{thisWeekAvg ? thisWeekAvg.toFixed(1) : '—'}</div>
-              {delta !== null && (
-                <div className={`bw-stat-delta ${delta > 0.2 ? 'up' : delta < -0.2 ? 'down' : 'flat'}`}>
-                  {delta > 0 ? '+' : ''}{delta.toFixed(1)}lb
+              <div className="bw-stat-label">This Wk</div>
+              <div className="bw-stat-val mono">{thisWkBw ? thisWkBw.toFixed(1) : '—'}</div>
+              {bwDelta !== null && (
+                <div className={`bw-stat-delta ${bwDelta > 0.2 ? 'up' : bwDelta < -0.2 ? 'down' : 'flat'}`}>
+                  {bwDelta > 0 ? '+' : ''}{bwDelta.toFixed(1)}lb
                 </div>
               )}
             </div>
             <div className="bw-stat">
-              <div className="bw-stat-label">Range</div>
-              <div className="bw-stat-val mono">{allMin ? `${allMin.toFixed(0)}–${allMax.toFixed(0)}` : '—'}</div>
-              <div className="bw-stat-delta flat">all-time</div>
+              <div className="bw-stat-label">Last Wk</div>
+              <div className="bw-stat-val mono">{lastWkBw ? lastWkBw.toFixed(1) : '—'}</div>
+              <div className="bw-stat-delta flat">avg</div>
             </div>
           </div>
 
           <div className="section-label">Trend</div>
           <div className="card chart-card">
-            <TrendChart points={entries.map(([d,v]) => ({x:d, y:v}))} />
+            <TrendChart points={bwEntries.map(([d, v]) => ({ x: d, y: v }))} />
           </div>
 
+          <div className="section-label">Weekly Averages</div>
+          <WeeklyAvgList weeklyAvgs={bwWeekly} unit="lb" decimals={1} />
+
           <div className="section-label">Recent Logs</div>
-          <div className="recent-list">
-            {entries.slice(-14).reverse().map(([d, v]) => (
-              <div key={d} className="recent-item">
-                <div className="recent-meta">{fmtDate(d)}</div>
-                <div className="recent-volume mono">{v}lb</div>
-              </div>
-            ))}
+          <LogList
+            entries={bwEntries} unit="lb" decimals={1}
+            editState={[bwEditVal, setBwEditVal]}
+            onStartEdit={bwStart}
+            onCommitEdit={(d, mn, mx) => commitEdit(d, mn, mx, bwEditVal, onLog, setBwEditDate)}
+            onCancelEdit={() => setBwEditDate(null)}
+            onDelete={(d) => deleteEntry(bw, d, onLog)}
+            editMin={60} editMax={600} editStep="0.1"
+          />
+        </>
+      )}
+
+      {/* ── STEPS ── */}
+      <div className="section-label" style={{ marginTop: 28 }}>Log Steps</div>
+      <LogInput
+        placeholder="steps" step="100" min={0} max={100000}
+        onSubmit={onLogSteps}
+        existingVal={st[today] != null ? st[today] : null}
+        existingLabel={Math.round(st[today]).toLocaleString() + ' steps'}
+      />
+
+      {stEntries.length > 0 && (
+        <>
+          <div className="bw-stat-grid">
+            <div className="bw-stat">
+              <div className="bw-stat-label">Today</div>
+              <div className="bw-stat-val mono">{st[today] ? Math.round(st[today]).toLocaleString() : '—'}</div>
+              <div className="bw-stat-delta flat">steps</div>
+            </div>
+            <div className="bw-stat">
+              <div className="bw-stat-label">This Wk</div>
+              <div className="bw-stat-val mono">{thisWkSt ? Math.round(thisWkSt).toLocaleString() : '—'}</div>
+              {stDelta !== null && (
+                <div className={`bw-stat-delta ${stDelta > 500 ? 'down' : stDelta < -500 ? 'up' : 'flat'}`} style={{ color: stDelta > 0 ? '#4ade80' : stDelta < 0 ? 'var(--red)' : 'var(--muted)' }}>
+                  {stDelta > 0 ? '+' : ''}{Math.round(stDelta).toLocaleString()}/day
+                </div>
+              )}
+            </div>
+            <div className="bw-stat">
+              <div className="bw-stat-label">Last Wk</div>
+              <div className="bw-stat-val mono">{lastWkSt ? Math.round(lastWkSt).toLocaleString() : '—'}</div>
+              <div className="bw-stat-delta flat">avg/day</div>
+            </div>
           </div>
+
+          <div className="section-label">Weekly Averages</div>
+          <WeeklyAvgList weeklyAvgs={stWeekly} unit=" steps" decimals={0} />
+
+          <div className="section-label">Recent Logs</div>
+          <LogList
+            entries={stEntries} unit=" steps" decimals={0}
+            editState={[stEditVal, setStEditVal]}
+            onStartEdit={stStart}
+            onCommitEdit={(d, mn, mx) => commitEdit(d, mn, mx, stEditVal, onLogSteps, setStEditDate)}
+            onCancelEdit={() => setStEditDate(null)}
+            onDelete={(d) => deleteEntry(st, d, onLogSteps)}
+            editMin={0} editMax={100000} editStep="100"
+          />
         </>
       )}
     </div>
@@ -2722,12 +2936,12 @@ function TrendChart({ points }) {
 }
 
 function ProgressView({ data }) {
-  // dedupe exercises by id (combine A & B)
+  // dedupe exercises by id across all days and variations
   const allExercises = useMemo(() => {
     const map = new Map();
-    for (const prog of [PROGRAM_A, PROGRAM_B]) {
-      for (const day of Object.values(prog)) {
-        for (const ex of day.exercises) {
+    for (const day of Object.values(PROGRAM)) {
+      for (const v of ['varA','varB','varC']) {
+        for (const ex of day[v].exercises) {
           if (!map.has(ex.id)) map.set(ex.id, ex);
         }
       }
@@ -3282,9 +3496,24 @@ function App() {
       update({ sessions: ns });
     }
   };
+  const resetProgram = () => {
+    if (confirm('Start program from Week 1? All session completion markers will be cleared. Your exercise history (weights/reps) is kept.')) {
+      update({ currentWeek: 0, sessions: {} });
+    }
+  };
 
   const logBodyweight = (date, val) => {
-    update({ bodyweight: { ...data.bodyweight, [date]: val } });
+    const next = { ...data.bodyweight };
+    if (val === null) delete next[date];
+    else next[date] = val;
+    update({ bodyweight: next });
+  };
+
+  const logSteps = (date, val) => {
+    const next = { ...(data.steps || {}) };
+    if (val === null) delete next[date];
+    else next[date] = val;
+    update({ steps: next });
   };
 
   const saveRunLog = (runId, log) => {
@@ -3313,13 +3542,14 @@ function App() {
           onSelectDay={(week, dayId) => setActiveSession({ week, dayId })}
           onAdvanceWeek={advanceWeek}
           onResetWeek={resetWeek}
+          onResetProgram={resetProgram}
         />
       );
     }
   } else if (tab === 'run') {
     view = <RunPlanView data={data} onSaveLog={saveRunLog} />;
   } else if (tab === 'body') {
-    view = <BodyweightView data={data} onLog={logBodyweight} />;
+    view = <BodyweightView data={data} onLog={logBodyweight} onLogSteps={logSteps} />;
   } else {
     view = <ProgressView data={data} />;
   }
