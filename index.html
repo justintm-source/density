@@ -3457,7 +3457,7 @@ function App() {
   }, [session]);
 
   useEffect(() => {
-    saveData(data);
+    saveData(data); // always persist locally
     if (!session || !hydrated) return;
     if (debounceRef.current) clearTimeout(debounceRef.current);
     setSyncState('syncing');
@@ -3467,6 +3467,7 @@ function App() {
     }, 1500);
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [data, session, hydrated]);
+
 
   const update = (patch, silent) => {
     setData(prev => ({ ...prev, ...patch }));
@@ -3481,8 +3482,6 @@ function App() {
     await sb.auth.signOut();
   };
 
-  if (!authReady) return <div className="auth-loading">LOADING</div>;
-  if (!session) return <LoginView />;
 
   const advanceWeek = () => {
     if (confirm('Advance to next week? Current sessions will remain in history.')) {
@@ -3567,8 +3566,8 @@ function App() {
           <div className={`week-pill ${isDeloadWeek(week) ? 'deload' : ''}`}>
             {getWeekLabel(week)} · CYC {String(getCycleNum(week)).padStart(2,'0')}
           </div>
-          <span className={`sync-dot ${syncState}`} title={syncState === 'syncing' ? 'Syncing' : syncState === 'offline' ? 'Offline' : 'Synced'}></span>
-          <button className="signout-btn" onClick={signOut}>OUT</button>
+          {session && <span className={`sync-dot ${syncState}`} title={syncState === 'syncing' ? 'Syncing' : syncState === 'offline' ? 'Offline' : 'Synced'}></span>}
+          {session && <button className="signout-btn" onClick={signOut}>OUT</button>}
         </div>
       </header>
       <main>{view}</main>
